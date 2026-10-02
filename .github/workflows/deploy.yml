@@ -26,15 +26,17 @@ jobs:
       - name: Export image
         run: docker save mw-customer-rag:${{ steps.meta.outputs.tag }} | gzip > /tmp/mw-customer-rag.tar.gz
 
+      - name: Install sshpass
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+
       - name: Upload image to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          source: /tmp/mw-customer-rag.tar.gz
-          target: /tmp
-          overwrite: true
+        env:
+          SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -p "$SSH_PASS" scp -O \
+            -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+            /tmp/mw-customer-rag.tar.gz \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/"
 
       - name: Deploy (load, swap, health-check, auto-rollback)
         uses: appleboy/ssh-action@v1.2.0
@@ -42,12 +44,20 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
+          command_timeout: 20m
           script: |
             TAG=${{ steps.meta.outputs.tag }}
             IMAGE=mw-customer-rag:$TAG
 
+            TAR=/tmp/mw-customer-rag.tar.gz
+            [ -f "$TAR" ] || TAR=/tmp/tmp/mw-customer-rag.tar.gz
+            if [ ! -f "$TAR" ]; then
+              echo "FATAL: tarball missing on server"
+              exit 1
+            fi
+
             echo "Loading image..."
-            if ! docker load -i /tmp/mw-customer-rag.tar.gz; then
+            if ! docker load -i "$TAR"; then
               echo "FATAL: docker load failed"
               exit 1
             fi
@@ -90,6 +100,7 @@ jobs:
 
             echo "Cleaning up..."
             docker rm -f mw-customer-rag-old >/dev/null 2>&1 || true
-            rm -f /tmp/mw-customer-rag.tar.gz
+            rm -f /tmp/mw-customer-rag.tar.gz /tmp/tmp/mw-customer-rag.tar.gz 2>/dev/null || true
+            rmdir /tmp/tmp 2>/dev/null || true
             docker image prune -f >/dev/null
             echo "DEPLOY OK: $IMAGE"
