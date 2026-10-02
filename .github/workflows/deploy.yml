@@ -1,4 +1,4 @@
-name: CI/CD — Build & Deploy
+name: CI/CD — Test, Build & Deploy
 
 on:
   push:
@@ -10,7 +10,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test
+
   build-deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,6 +69,7 @@ jobs:
           command_timeout: 20m
           script: |
             TAG=${{ steps.meta.outputs.tag }}
+            SHA=${{ github.sha }}
             IMAGE=mw-customer-rag:$TAG
 
             TAR=/tmp/mw-customer-rag.tar.gz
@@ -111,14 +134,26 @@ jobs:
               docker rm -f mw-customer-rag >/dev/null 2>&1 || true
               if [ -n "$(docker ps -aq -f name=^mw-customer-rag-old$)" ]; then
                 docker rename mw-customer-rag-old mw-customer-rag
-                docker start mw-customer-rag >/dev/null 2>&1 || true
+                docker start mw-customer-rag >/dev/null
               fi
               exit 1
             fi
 
-            echo "Cleaning up..."
+            echo "Cleaning up (THIS project only — nothing else touched)..."
             docker rm -f mw-customer-rag-old >/dev/null 2>&1 || true
+            for img in $(docker images --format '{{.Repository}}:{{.Tag}}' mw-customer-rag | grep -v "^$IMAGE$"); do
+              docker rmi "$img" >/dev/null 2>&1 || true
+            done
             rm -f /tmp/mw-customer-rag.tar.gz /tmp/tmp/mw-customer-rag.tar.gz 2>/dev/null || true
             rmdir /tmp/tmp 2>/dev/null || true
-            docker image prune -f >/dev/null
+
+            echo "Syncing latest code checkout on server..."
+            if [ ! -d /root/projects/mw-customer-rag/.git ]; then
+              git clone --quiet https://github.com/shaheen2013/mw-customer-rag.git /root/projects/mw-customer-rag
+            fi
+            cd /root/projects/mw-customer-rag
+            git fetch --quiet origin main
+            git checkout --quiet --detach "$SHA"
+            echo "Server checkout at: $(git rev-parse --short HEAD)"
+
             echo "DEPLOY OK: $IMAGE"

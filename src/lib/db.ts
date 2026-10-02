@@ -1,10 +1,15 @@
 // Configured for user credentials: mysql host localhost, user root, password 'password', database mw_rag
 
-let pool: any = null;
+type MySQLPool = {
+  execute: (sql: string, params?: unknown[]) => Promise<[unknown, unknown]>;
+};
+
+let pool: MySQLPool | null = null;
 
 if (typeof window === 'undefined') {
   try {
     // Dynamically require mysql2 only on server side to prevent bundling in browser client code
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mysql = require('mysql2/promise');
     pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
@@ -52,7 +57,7 @@ export const mockDatabase = {
   ]
 };
 
-export async function query(sql: string, params: any[] = []) {
+export async function query(sql: string, params: unknown[] = []) {
   if (pool) {
     try {
       const [rows] = await pool.execute(sql, params);

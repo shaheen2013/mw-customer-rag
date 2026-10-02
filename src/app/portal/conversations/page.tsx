@@ -7,7 +7,7 @@ import { mockDatabase } from '@/lib/db';
 
 export default function ConversationsPage() {
   const [filter, setFilter] = useState<'All' | 'Answered' | 'Weak' | 'Unanswered'>('All');
-  const [selectedConv, setSelectedConv] = useState<any | null>(null);
+  const [selectedConv, setSelectedConv] = useState<(typeof mockDatabase.conversations)[number] | null>(null);
 
   const convs = mockDatabase.conversations;
 
