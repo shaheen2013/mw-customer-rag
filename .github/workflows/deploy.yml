@@ -67,17 +67,35 @@ jobs:
               exit 1
             fi
 
-            echo "Stopping old container..."
+            echo "Stopping old container (frees port)..."
             docker rm -f mw-customer-rag-old >/dev/null 2>&1 || true
             if [ -n "$(docker ps -aq -f name=^mw-customer-rag$)" ]; then
+              docker stop mw-customer-rag >/dev/null
               docker rename mw-customer-rag mw-customer-rag-old
             fi
 
             echo "Starting $IMAGE ..."
-            docker run -d --name mw-customer-rag \
+            if ! docker run -d --name mw-customer-rag \
               --restart unless-stopped \
               -p 127.0.0.1:3024:3000 \
-              "$IMAGE"
+              "$IMAGE"; then
+              echo "CONTAINER START FAILED — rolling back"
+              docker rm -f mw-customer-rag >/dev/null 2>&1 || true
+              if [ -n "$(docker ps -aq -f name=^mw-customer-rag-old$)" ]; then
+                docker rename mw-customer-rag-old mw-customer-rag
+                docker start mw-customer-rag >/dev/null
+              fi
+              exit 1
+            fi
+
+            running_image=$(docker inspect mw-customer-rag --format '{{.Config.Image}}')
+            if [ "$running_image" != "$IMAGE" ]; then
+              echo "FATAL: wrong image running ($running_image) — rolling back"
+              docker rm -f mw-customer-rag >/dev/null 2>&1 || true
+              docker rename mw-customer-rag-old mw-customer-rag 2>/dev/null || true
+              docker start mw-customer-rag >/dev/null 2>&1 || true
+              exit 1
+            fi
 
             echo "Health-checking (up to 60s)..."
             ok=0
