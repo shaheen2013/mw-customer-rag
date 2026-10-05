@@ -1,31 +1,41 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AuthProvider } from "@/context/AuthContext";
-import Home from "@/app/page";
-
-const push = vi.fn();
+import LandingPage from "@/app/page";
+import DashboardPage from "@/app/(dashboard)/dashboard/page";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
 }));
 
-describe("Home page", () => {
-  it("shows the loading state and redirects based on the user role", () => {
+describe("Landing Page", () => {
+  it("renders the landing page hero and core value proposition", () => {
     render(
       <AuthProvider>
-        <Home />
+        <LandingPage />
       </AuthProvider>,
     );
 
     expect(
-      screen.getByText(/Loading Mediusware AI Platform/i),
+      screen.getByText(/Grounded in Your Knowledge/i),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Create Organization Workspace/i),
+    ).toBeInTheDocument();
+  });
+});
 
-    const pushedTo = push.mock.calls.map(([to]) => to);
-    expect(pushedTo).toEqual(
-      expect.arrayContaining([
-        expect.toSatisfy((to: string) => ["/login", "/admin", "/portal"].includes(to)),
-      ]),
+describe("Tenant Dashboard Page", () => {
+  it("renders tenant workspace dashboard metrics and title", () => {
+    render(
+      <AuthProvider>
+        <DashboardPage />
+      </AuthProvider>,
     );
+
+    expect(
+      screen.getByText(/Tenant Dashboard/i),
+    ).toBeInTheDocument();
   });
 });

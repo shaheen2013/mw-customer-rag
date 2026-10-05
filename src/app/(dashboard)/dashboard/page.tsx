@@ -146,7 +146,7 @@ export default function TenantDashboardPage() {
         <div className="card-panel overflow-hidden">
           <div className="p-4 border-b border-[#1b2a47] flex justify-between items-center">
             <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Recent Conversations</h3>
-            <Link href="/portal/conversations" className="text-xs text-blue-400 hover:underline">View All</Link>
+            <Link href="/conversations" className="text-xs text-blue-400 hover:underline">View All</Link>
           </div>
           <table className="w-full text-left border-collapse">
             <thead>

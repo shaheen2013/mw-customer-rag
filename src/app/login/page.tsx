@@ -1,205 +1,187 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { Bot, Shield, User, Building, ArrowRight, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { useTenantLoginMutation } from '@/hooks/useAuthQueries';
+import {
+  Building2,
+  Lock,
+  Mail,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertCircle,
+} from 'lucide-react';
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
+export default function TenantLoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [role, setRole] = useState<'super_admin' | 'tenant_admin'>('tenant_admin');
-  const [email, setEmail] = useState('acme@mediusware.ai');
-  const [password, setPassword] = useState('password');
-  const [tenantName, setTenantName] = useState('Acme Corp');
+  const tenantLoginMutation = useTenantLoginMutation({
+    onError: (err: any) => {
+      const msg = err?.data?.error?.message || err?.message || 'Authentication failed. Please check credentials.';
+      setErrorMessage(msg);
+    },
+  });
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, role, tenantName);
-    if (role === 'super_admin') {
-      router.push('/admin');
-    } else {
-      router.push('/portal');
-    }
+    setErrorMessage(null);
+
+    tenantLoginMutation.mutate({
+      email,
+      password,
+    });
   };
 
-  const quickLoginSuperAdmin = () => {
-    login('admin@mediusware.ai', 'super_admin', 'Acme Corp');
-    router.push('/admin');
-  };
-
-  const quickLoginTenant = () => {
-    login('acme@mediusware.ai', 'tenant_admin', 'Acme Corp');
-    router.push('/portal');
-  };
+  const isLoading = tenantLoginMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-[#060a14] flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-screen bg-[#060a14] text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden font-sans selection:bg-blue-600 selection:text-white">
+      {/* Background Ambient Lighting & Glow Orbs */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute -bottom-32 right-10 w-[30rem] h-[30rem] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute -top-20 left-10 w-[24rem] h-[24rem] bg-emerald-600/10 rounded-full blur-[110px] pointer-events-none" />
 
-      {/* Brand Header */}
-      <div className="text-center mb-8 z-10">
-        <div className="inline-flex items-center gap-3 bg-[#0d1527] border border-[#1b2a47] px-4 py-2 rounded-full mb-3 shadow-lg">
-          <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center font-bold text-white text-sm">
-            M
+      {/* Grid Pattern Overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.035] pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(#38bdf8 1px, transparent 1px)`,
+          backgroundSize: '28px 28px',
+        }}
+      />
+
+      <div className="w-full max-w-lg relative z-10">
+        {/* Brand & Portal Header */}
+        <div className="text-center mb-7">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-3 tracking-wide shadow-sm">
+            <Building2 className="w-3.5 h-3.5 text-blue-400" />
+            <span>CLIENT & TENANT WORKSPACE</span>
           </div>
-          <span className="font-bold text-xl text-white tracking-tight">Mediusware AI</span>
-        </div>
-        <p className="text-sm text-slate-400 max-w-sm mx-auto">
-          Multi-Tenant AI Knowledge Chatbot & Customer Intelligence Platform
-        </p>
-      </div>
 
-      {/* Auth Card Container */}
-      <div className="w-full max-w-md bg-[#0d1527] border border-[#1b2a47] rounded-xl shadow-2xl p-6 sm:p-8 z-10">
-        {/* Tab Switcher: Login vs Register */}
-        <div className="flex bg-[#121e36] p-1 rounded-lg border border-[#1b2a47] mb-6">
-          <button
-            onClick={() => setMode('login')}
-            className={`flex-1 py-2 text-xs font-semibold rounded-md transition ${
-              mode === 'login' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setMode('register')}
-            className={`flex-1 py-2 text-xs font-semibold rounded-md transition ${
-              mode === 'register' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Register Tenant
-          </button>
-        </div>
-
-        {/* Quick Demo Login Preset Buttons */}
-        <div className="mb-6 space-y-2">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-center mb-2">
-            ⚡ Quick Demo Logins
-          </div>
-          <button
-            onClick={quickLoginSuperAdmin}
-            type="button"
-            className="w-full py-2.5 px-3 bg-[#121f38] hover:bg-[#182845] border border-blue-500/30 rounded-lg text-xs font-medium text-blue-300 flex items-center justify-between transition group"
-          >
-            <span className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-blue-400" />
-              <span>Login as <strong>Super Admin</strong></span>
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-1 transition-transform" />
-          </button>
-
-          <button
-            onClick={quickLoginTenant}
-            type="button"
-            className="w-full py-2.5 px-3 bg-[#121f38] hover:bg-[#182845] border border-emerald-500/30 rounded-lg text-xs font-medium text-emerald-300 flex items-center justify-between transition group"
-          >
-            <span className="flex items-center gap-2">
-              <Building className="w-4 h-4 text-emerald-400" />
-              <span>Login as <strong>Acme Corp (Tenant)</strong></span>
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-
-        <div className="relative flex py-2 items-center mb-6">
-          <div className="flex-grow border-t border-[#1b2a47]"></div>
-          <span className="flex-shrink mx-3 text-[11px] font-medium text-slate-500 uppercase">Or Continue With</span>
-          <div className="flex-grow border-t border-[#1b2a47]"></div>
-        </div>
-
-        {/* Auth Form */}
-        <form onSubmit={handleAuthSubmit} className="space-y-4">
-          {/* Role selector inside form */}
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Select Access Portal</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setRole('super_admin');
-                  setEmail('admin@mediusware.ai');
-                }}
-                className={`py-2 px-3 border rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition ${
-                  role === 'super_admin'
-                    ? 'border-blue-500 bg-blue-950/40 text-blue-300'
-                    : 'border-[#1b2a47] bg-[#121e36] text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Shield className="w-3.5 h-3.5" />
-                Super Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setRole('tenant_admin');
-                  setEmail('acme@mediusware.ai');
-                }}
-                className={`py-2 px-3 border rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition ${
-                  role === 'tenant_admin'
-                    ? 'border-blue-500 bg-blue-950/40 text-blue-300'
-                    : 'border-[#1b2a47] bg-[#121e36] text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                Client Portal
-              </button>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center font-bold text-white text-lg shadow-lg shadow-blue-600/25 border border-white/20">
+              M
             </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+              Mediusware{' '}
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                AI Portal
+              </span>
+            </h1>
           </div>
+          <p className="text-sm text-slate-400 max-w-sm mx-auto">
+            Access your organization&apos;s AI Knowledge Chatbot and customer intelligence data.
+          </p>
+        </div>
 
-          {mode === 'register' && (
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Company / Organization Name</label>
-              <input
-                type="text"
-                value={tenantName}
-                onChange={(e) => setTenantName(e.target.value)}
-                placeholder="e.g. Acme Corp"
-                required
-                className="w-full bg-[#121e36] border border-[#1b2a47] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-              />
+        {/* Main Card Container */}
+        <div className="bg-[#0c1427]/90 backdrop-blur-xl border border-[#1b2a47] rounded-2xl shadow-2xl p-6 sm:p-8 relative">
+          {/* Subtle top highlight */}
+          <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent" />
+
+          {errorMessage && (
+            <div className="mb-5 p-3.5 bg-red-950/60 border border-red-500/50 rounded-xl flex items-start gap-2.5 text-xs text-red-200">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">{errorMessage}</div>
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Work Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@domain.com"
-              required
-              className="w-full bg-[#121e36] border border-[#1b2a47] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-            />
-          </div>
+          {/* Tenant Authentication Form - Only Email and Password */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                Work Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#080e1d] border border-[#1b2a47] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner"
+                />
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              className="w-full bg-[#121e36] border border-[#1b2a47] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-            />
-          </div>
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Password
+                </label>
+                <span className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer">
+                  Forgot password?
+                </span>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                  className="w-full pl-10 pr-10 py-2.5 bg-[#080e1d] border border-[#1b2a47] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg shadow-lg shadow-blue-600/30 transition mt-2"
-          >
-            {mode === 'login' ? 'Sign In to Platform' : 'Create Organization Account'}
-          </button>
-        </form>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-600/30 transition duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 mt-3 cursor-pointer"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Entering Workspace...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In to Workspace</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+
+            {/* Register Organization Link */}
+            <div className="mt-6 pt-5 border-t border-[#1b2a47]/70 flex items-center justify-between text-xs">
+              <span className="text-slate-400">New company workspace?</span>
+              <Link
+                href="/register"
+                className="font-semibold text-blue-400 hover:text-blue-300 transition"
+              >
+                Register Organization
+              </Link>
+            </div>
+          </form>
+
+        </div>
+
+        {/* Footer info */}
+        <p className="mt-6 text-center text-xs text-slate-500">
+          Mediusware Multi-Tenant AI Platform &copy; 2026. All rights reserved.
+        </p>
       </div>
-
-      <p className="mt-8 text-xs text-slate-500">
-        Mediusware AI Platform &copy; 2026. All rights reserved.
-      </p>
     </div>
   );
 }

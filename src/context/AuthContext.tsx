@@ -1,16 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useAuthStore, User, UserRole } from '@/store/useAuthStore';
 
-export type UserRole = 'super_admin' | 'tenant_admin';
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  tenantName?: string;
-}
+export type { User, UserRole };
 
 interface AuthContextType {
   user: User | null;
@@ -18,60 +11,72 @@ interface AuthContextType {
   logout: () => void;
   activeTenant: string;
   setActiveTenant: (name: string) => void;
+  tokens: {
+    accessToken: string | null;
+    refreshToken: string | null;
+  };
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
+  const user = useAuthStore((state) => state.user);
+  const tokens = useAuthStore((state) => state.tokens);
+  const activeTenant = useAuthStore((state) => state.activeTenant);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const setUser = useAuthStore((state) => state.setUser);
+  const setActiveTenant = useAuthStore((state) => state.setActiveTenant);
+  const storeLogout = useAuthStore((state) => state.logout);
+
+  // Sync from localStorage if present (for test isolation & immediate restore)
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('mw_user');
       if (saved) {
         try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.email) {
+            setUser(parsed);
+          }
+        } catch (_) {}
       }
     }
-    // Default logged in as Super Admin for direct access matching PDF
-    return {
-      id: '1',
-      email: 'admin@mediusware.ai',
-      name: 'Super Admin',
-      role: 'super_admin',
-      tenantName: 'Acme Corp',
-    };
-  });
-
-  const [activeTenant, setActiveTenant] = useState<string>('Acme Corp');
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('mw_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('mw_user');
-    }
-  }, [user]);
+  }, [setUser]);
 
   const login = (email: string, role: UserRole, tenantName: string = 'Acme Corp') => {
+    const isSuper = role === 'super_admin' || role === 'platform_admin';
     const newUser: User = {
       id: Date.now().toString(),
       email,
-      name: role === 'super_admin' ? 'Super Admin' : `${tenantName} Admin`,
+      name: isSuper ? 'Super Admin' : `${tenantName} Admin`,
       role,
       tenantName,
     };
-    setUser(newUser);
+    setAuth(newUser, {
+      accessToken: `mock-jwt-token-${Date.now()}`,
+      refreshToken: `mock-refresh-token-${Date.now()}`,
+    });
     if (tenantName) setActiveTenant(tenantName);
   };
 
   const logout = () => {
-    setUser(null);
+    storeLogout();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, activeTenant, setActiveTenant }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        activeTenant,
+        setActiveTenant,
+        tokens,
+        isAuthenticated,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

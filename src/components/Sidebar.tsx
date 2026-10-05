@@ -43,15 +43,15 @@ export default function Sidebar() {
   ];
 
   const tenantNav = [
-    { name: 'Dashboard', href: '/portal', icon: LayoutDashboard },
-    { name: 'Knowledge Base', href: '/portal/knowledge-base', icon: Database },
-    { name: 'Web Sources', href: '/portal/web-sources', icon: Globe },
-    { name: 'AI Assistant', href: '/portal/assistant', icon: Bot },
-    { name: 'Conversations', href: '/portal/conversations', icon: MessageSquare },
-    { name: 'Analytics', href: '/portal/analytics', icon: BarChart3 },
-    { name: 'Widget & Deploy', href: '/portal/widget', icon: Code2 },
-    { name: 'Plan & Usage', href: '/portal/plan', icon: PieChart },
-    { name: 'Settings', href: '/portal/settings', icon: Settings },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Knowledge Base', href: '/knowledge-base', icon: Database },
+    { name: 'Web Sources', href: '/web-sources', icon: Globe },
+    { name: 'AI Assistant', href: '/assistant', icon: Bot },
+    { name: 'Conversations', href: '/conversations', icon: MessageSquare },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Widget & Deploy', href: '/widget', icon: Code2 },
+    { name: 'Plan & Usage', href: '/plan', icon: PieChart },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   const currentNav = isSuperAdmin ? superAdminNav : tenantNav;
@@ -71,10 +71,10 @@ export default function Sidebar() {
             {isSuperAdmin ? 'Super Admin' : 'Client Portal'}
           </span>
           <button
-            onClick={() => router.push(isSuperAdmin ? '/portal' : '/admin')}
+            onClick={() => router.push(isSuperAdmin ? '/dashboard' : '/admin')}
             className="text-[10px] text-slate-400 hover:text-white underline transition"
           >
-            Switch to {isSuperAdmin ? 'Portal' : 'Admin'}
+            Switch to {isSuperAdmin ? 'Workspace' : 'Admin'}
           </button>
         </div>
       </div>
@@ -83,7 +83,12 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 space-y-1">
         {currentNav.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/portal' && pathname.startsWith(item.href));
+          const isActive =
+            item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : item.href === '/admin'
+              ? pathname === '/admin'
+              : pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}

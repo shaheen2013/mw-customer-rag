@@ -7,15 +7,10 @@ describe("AuthContext", () => {
     localStorage.clear();
   });
 
-  it("defaults to Super Admin when nothing is stored", () => {
+  it("defaults to null when nothing is stored", () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
-    expect(result.current.user).toEqual(
-      expect.objectContaining({
-        role: "super_admin",
-        email: "admin@mediusware.ai",
-      }),
-    );
+    expect(result.current.user).toBeNull();
   });
 
   it("login() stores the user and persists it to localStorage", () => {
