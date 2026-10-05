@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Header from '@/components/Header';
-import { CreditCard, Zap, CheckCircle } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export default function TenantPlanUsagePage() {
   return (

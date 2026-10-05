@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { Save, Send, Bot, CheckCircle, FileText, Globe, Sparkles } from 'lucide-react';
+import { Save, Send, Bot, CheckCircle, FileText, Sparkles } from 'lucide-react';
 
 export default function AIAssistantPage() {
   const [tab, setTab] = useState<'config' | 'playground'>('config');

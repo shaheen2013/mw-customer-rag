@@ -246,7 +246,7 @@ export function useLogoutMutation() {
     mutationFn: async () => {
       try {
         await authApi.logout();
-      } catch (_) {
+      } catch {
         // Continue client logout even if API call fails
       }
     },

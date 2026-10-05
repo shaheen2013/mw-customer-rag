@@ -27,10 +27,11 @@ export default function TenantRegisterPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const registerMutation = useTenantRegisterMutation({
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const errorObj = err as { data?: { error?: { message?: string } }; message?: string };
       const msg =
-        err?.data?.error?.message ||
-        err?.message ||
+        errorObj?.data?.error?.message ||
+        errorObj?.message ||
         'Registration failed. Please try a different email or workspace slug.';
       setErrorMessage(msg);
     },

@@ -24,8 +24,12 @@ export default function AdminLoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const adminLoginMutation = useAdminLoginMutation({
-    onError: (err: any) => {
-      const msg = err?.data?.error?.message || err?.message || 'Authentication failed. Please check credentials.';
+    onError: (err: unknown) => {
+      const errorObj = err as { data?: { error?: { message?: string } }; message?: string };
+      const msg =
+        errorObj?.data?.error?.message ||
+        errorObj?.message ||
+        'Authentication failed. Please check credentials.';
       setErrorMessage(msg);
     },
   });

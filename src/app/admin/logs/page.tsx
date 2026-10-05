@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Header from '@/components/Header';
-import { FileText } from 'lucide-react';
 
 export default function AdminLogsPage() {
   return (

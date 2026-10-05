@@ -4,7 +4,7 @@ import React from 'react';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { ResponsiveContainer, LineChart, Line, Tooltip } from 'recharts';
-import { ArrowLeft, CheckCircle, Activity, Bot } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Bot } from 'lucide-react';
 
 const usageTrendData = [
   { day: 'Sep 1', usage: 1200 },
@@ -15,7 +15,7 @@ const usageTrendData = [
   { day: 'Sep 24', usage: 8420 },
 ];
 
-export default function TenantDetailPage({ params }: { params: { id: string } }) {
+export default function TenantDetailPage() {
   return (
     <div>
       <div className="mb-4">

@@ -8,7 +8,6 @@ import { Building2 } from 'lucide-react';
 export default function TenantAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setUser = useAuthStore((state) => state.setUser);
   const setHasHydrated = useAuthStore((state) => state.setHasHydrated);
   const [isReady, setIsReady] = useState(false);
@@ -28,14 +27,19 @@ export default function TenantAuthGuard({ children }: { children: React.ReactNod
             setUser(parsed);
             activeUser = parsed;
           }
-        } catch (_) {}
+        } catch {
+          // ignore corrupted local storage
+        }
       }
     }
 
     if (!activeUser) {
       router.replace('/login');
     } else {
-      setIsReady(true);
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [user, setUser, setHasHydrated, router]);
 

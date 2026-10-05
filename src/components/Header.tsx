@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ChevronDown, Calendar, Search } from 'lucide-react';
+import { ChevronDown, Calendar } from 'lucide-react';
 
 interface HeaderProps {
   title: string;

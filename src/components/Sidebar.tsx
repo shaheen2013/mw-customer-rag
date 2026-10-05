@@ -21,7 +21,6 @@ import {
   Code2,
   PieChart,
   LogOut,
-  ShieldAlert,
 } from 'lucide-react';
 
 export default function Sidebar() {

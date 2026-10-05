@@ -4,7 +4,7 @@ import React from 'react';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { ResponsiveContainer, AreaChart, Area, Tooltip } from 'recharts';
-import { Cpu, MessageSquare, CheckCircle2, Database, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { mockDatabase } from '@/lib/db';
 
 const tenantTrendData = [

@@ -10,7 +10,7 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Users, Cpu, DollarSign, HardDrive } from 'lucide-react';
+import { Users, Cpu, DollarSign, HardDrive } from 'lucide-react';
 
 const trendData = [
   { day: 'Sep 1', queries: 2400, cost: 120 },

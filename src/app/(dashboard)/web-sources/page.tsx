@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { Plus, RefreshCw, Globe, CheckCircle } from 'lucide-react';
+import { Plus, RefreshCw, Globe } from 'lucide-react';
 import { mockDatabase } from '@/lib/db';
 
 export default function WebSourcesPage() {

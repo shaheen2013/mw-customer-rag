@@ -40,7 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (parsed && parsed.email) {
             setUser(parsed);
           }
-        } catch (_) {}
+        } catch {
+          // ignore corrupted local storage
+        }
       }
     }
   }, [setUser]);

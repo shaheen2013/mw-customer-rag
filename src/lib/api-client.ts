@@ -15,9 +15,9 @@ export interface ApiErrorResponse {
 export class ApiError extends Error {
   status: number;
   code: string;
-  data: any;
+  data?: unknown;
 
-  constructor(status: number, message: string, code: string = 'API_ERROR', data?: any) {
+  constructor(status: number, message: string, code: string = 'API_ERROR', data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -33,11 +33,11 @@ interface RequestOptions extends RequestInit {
 
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (reason?: any) => void;
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((promise) => {
     if (error) {
       promise.reject(error);
@@ -167,24 +167,30 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
     let errorCode = 'HTTP_ERROR';
-    let errorData: any = null;
+    let errorData: unknown = null;
 
     if (isJson) {
       try {
         errorData = await response.json();
-        if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-          errorCode = errorData.error.code || errorCode;
-        } else if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            errorMessage = errorData.detail.map((d: any) => d.msg).join(', ');
+        const errObj = errorData as {
+          error?: { message?: string; code?: string };
+          detail?: string | Array<{ msg?: string }>;
+          message?: string;
+        };
+
+        if (errObj.error?.message) {
+          errorMessage = errObj.error.message;
+          errorCode = errObj.error.code || errorCode;
+        } else if (errObj.detail) {
+          if (Array.isArray(errObj.detail)) {
+            errorMessage = errObj.detail.map((d) => d.msg || '').filter(Boolean).join(', ');
           } else {
-            errorMessage = String(errorData.detail);
+            errorMessage = String(errObj.detail);
           }
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
+        } else if (errObj.message) {
+          errorMessage = errObj.message;
         }
-      } catch (_) {
+      } catch {
         // failed to parse JSON error body
       }
     }

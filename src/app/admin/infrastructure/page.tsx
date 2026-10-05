@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Header from '@/components/Header';
-import { Server, Database, Activity } from 'lucide-react';
 
 export default function AdminInfrastructurePage() {
   return (

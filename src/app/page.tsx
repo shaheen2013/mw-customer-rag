@@ -8,14 +8,9 @@ import {
   Database,
   Globe,
   ShieldCheck,
-  Zap,
   ArrowRight,
   Sparkles,
-  BarChart3,
   Code2,
-  CheckCircle2,
-  Building2,
-  Users,
 } from 'lucide-react';
 
 export default function LandingPage() {

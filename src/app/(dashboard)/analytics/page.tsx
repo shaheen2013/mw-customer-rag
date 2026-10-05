@@ -3,7 +3,6 @@
 import React from 'react';
 import Header from '@/components/Header';
 import { ResponsiveContainer, AreaChart, Area, Tooltip } from 'recharts';
-import { BarChart2, TrendingUp, ThumbsUp, AlertCircle } from 'lucide-react';
 
 const analyticsTrendData = [
   { day: 'Sep 1', queries: 1200, quality: 90 },

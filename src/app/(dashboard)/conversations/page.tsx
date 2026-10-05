@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { MessageSquare, AlertTriangle, CheckCircle, Eye, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, Eye, ArrowLeft } from 'lucide-react';
 import { mockDatabase } from '@/lib/db';
 
 export default function ConversationsPage() {

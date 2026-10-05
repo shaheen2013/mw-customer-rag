@@ -2,12 +2,11 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { Upload, RefreshCw, FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Upload, RefreshCw, FileText } from 'lucide-react';
 import { mockDatabase } from '@/lib/db';
 
 export default function KnowledgeBasePage() {
   const [docs, setDocs] = useState(mockDatabase.documents);
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { Copy, Check, Code, ShieldCheck } from 'lucide-react';
+import { Copy, Check, ShieldCheck } from 'lucide-react';
 
 export default function WidgetDeploymentPage() {
   const [widgetName, setWidgetName] = useState('Acme AI Assistant');
