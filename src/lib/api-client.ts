@@ -73,8 +73,9 @@ export async function apiClient<T>(
     }
   }
 
+  const isFormData = typeof FormData !== 'undefined' && customConfig.body instanceof FormData;
   const reqHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...(headers as Record<string, string>),
   };
 
