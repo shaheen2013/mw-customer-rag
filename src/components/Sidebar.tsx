@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React from 'react';
@@ -55,10 +56,33 @@ export default function Sidebar() {
 
   const currentNav = isSuperAdmin ? superAdminNav : tenantNav;
 
+  const isProfileActive = pathname === '/admin/profile' || pathname === '/profile';
+
+  const getInitials = (name?: string, email?: string) => {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    if (email && email.trim()) {
+      return email.trim().slice(0, 2).toUpperCase();
+    }
+    return isSuperAdmin ? 'SA' : 'TU';
+  };
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+  const resolvedAvatar = user?.avatarUrl
+    ? user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('data:')
+      ? user.avatarUrl
+      : `${apiBaseUrl}${user.avatarUrl.startsWith('/') ? '' : '/'}${user.avatarUrl}`
+    : null;
+
   return (
-    <aside className="w-64 bg-[#060a14] border-r border-[#1b2a47] min-h-screen flex flex-col shrink-0 select-none">
+    <aside className="w-64 bg-[#060a14] border-r border-[#1b2a47] h-screen sticky top-0 flex flex-col shrink-0 select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-[#1b2a47]/50 flex flex-col gap-1">
+      <div className="p-5 border-b border-[#1b2a47]/50 flex flex-col gap-1 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white text-lg tracking-wider shadow-lg shadow-blue-500/20">
             M
@@ -71,7 +95,7 @@ export default function Sidebar() {
           </span>
           <button
             onClick={() => router.push(isSuperAdmin ? '/dashboard' : '/admin')}
-            className="text-[10px] text-slate-400 hover:text-white underline transition"
+            className="text-[10px] text-slate-400 hover:text-white underline transition cursor-pointer"
           >
             Switch to {isSuperAdmin ? 'Workspace' : 'Admin'}
           </button>
@@ -79,7 +103,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {currentNav.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -106,24 +130,44 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer Profile & Logout */}
-      <div className="p-3 border-t border-[#1b2a47] bg-[#080d19]">
-        <div className="flex items-center justify-between px-2 py-1.5">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center text-xs shrink-0">
-              JS
+      <div className="p-3 border-t border-[#1b2a47] bg-[#080d19] shrink-0">
+        <div
+          className={`flex items-center justify-between px-2 py-1.5 rounded-md transition ${
+            isProfileActive ? 'bg-[#121f38] border border-blue-500/50' : 'hover:bg-[#0d1527]'
+          }`}
+        >
+          <button
+            onClick={() => router.push(isSuperAdmin ? '/admin/profile' : '/profile')}
+            className="flex items-center gap-2 overflow-hidden flex-1 text-left cursor-pointer group"
+            title="View & Edit Profile / Change Password"
+          >
+            <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-blue-500/30">
+              {resolvedAvatar ? (
+                <img src={resolvedAvatar} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                getInitials(user?.name, user?.email)
+              )}
             </div>
             <div className="truncate">
-              <p className="text-xs font-medium text-white truncate">{user?.name || 'Super Admin'}</p>
-              <p className="text-[10px] text-slate-400 truncate">{user?.email || 'admin@mediusware.ai'}</p>
+              <p
+                className={`text-xs font-medium truncate transition ${
+                  isProfileActive ? 'text-blue-400 font-semibold' : 'text-white group-hover:text-blue-300'
+                }`}
+              >
+                {user?.name || (isSuperAdmin ? 'Super Admin' : 'Workspace User')}
+              </p>
+              <p className="text-[10px] text-slate-400 truncate">
+                {user?.email || (isSuperAdmin ? 'admin@mediusware.ai' : 'user@company.com')}
+              </p>
             </div>
-          </div>
+          </button>
           <button
             onClick={() => {
               logout();
               router.push('/login');
             }}
             title="Log out"
-            className="text-slate-400 hover:text-red-400 p-1.5 rounded hover:bg-[#121e36] transition"
+            className="text-slate-400 hover:text-red-400 p-1.5 rounded hover:bg-[#121e36] transition shrink-0 ml-1"
           >
             <LogOut className="w-4 h-4" />
           </button>
