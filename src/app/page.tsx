@@ -1,6 +1,7 @@
 "use client";
 
 import HeroSection from "@/components/landing-page/HeroSection";
+import TrustedIndustriesSection from "@/components/landing-page/TrustedIndustriesSection";
 import { useAuthStore } from "@/store/useAuthStore";
 import { ArrowRight, Code2, Database, Globe, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -82,8 +83,10 @@ export default function LandingPage() {
       <main className="flex-1 relative z-10">
         <HeroSection />
 
+        <TrustedIndustriesSection />
+
         {/* Feature Highlights Grid */}
-        <section className="py-16 border-t border-[#1b2a47]/60 bg-[#070c18]/60">
+        <section className="py-16 bg-[#070c18]/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
