@@ -1,0 +1,143 @@
+import {
+  ArrowRight,
+  Clock3,
+  Languages,
+  ShieldCheck,
+  Star,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+
+// Swap these in once there's real review data — shown as "No reviews yet" until then.
+const RATING: { value: number | null; count: number | null | string } = {
+  value: 4.8,
+  count: "15k",
+};
+
+const CARDS = [
+  {
+    title: "Instant Answers",
+    description:
+      "Generate grounded responses from your knowledge base in under a second.",
+    icon: Zap,
+    active: true,
+  },
+  {
+    title: "Zero Hallucination",
+    description:
+      "Every answer is grounded strictly in your own documents, nothing invented.",
+    icon: ShieldCheck,
+    active: false,
+  },
+  {
+    title: "40+ Languages",
+    description:
+      "Connect with customers in over 40 languages for effortless support.",
+    icon: Languages,
+    active: false,
+  },
+  {
+    title: "24/7 Availability",
+    description:
+      "No matter the time zone, your AI agent is always on and ready to help.",
+    icon: Clock3,
+    active: false,
+  },
+];
+
+/** "Why choose us" pitch: a 2x2 benefits grid beside a closing headline and CTA. */
+export default function WhyChooseSection() {
+  return (
+    <section className="py-16 sm:py-20 ">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* 2x2 benefits grid */}
+          <div className="grid grid-cols-2 gap-4 order-2 lg:order-1">
+            {CARDS.map(({ title, description, icon: Icon, active }, i) => (
+              <div
+                key={title}
+                className={`p-5 rounded-2xl animate-fade-in-up transition-colors duration-300 ${
+                  active
+                    ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-600 shadow-xl shadow-blue-600/25"
+                    : "bg-[#0c1427]/80 border border-[#1b2a47] hover:border-blue-500/40"
+                }`}
+                style={{ animationDelay: `${i * 0.08}s` }}
+              >
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
+                    active
+                      ? "bg-white/15 border border-white/20 text-white"
+                      : "bg-blue-500/10 border border-blue-500/20 text-blue-400"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1.5">
+                  {title}
+                </h3>
+                <p
+                  className={`text-xs leading-relaxed ${active ? "text-white/80" : "text-slate-400"}`}
+                >
+                  {description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Headline, copy, CTA */}
+          <div className="order-1 lg:order-2 text-center lg:text-left">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+              Why Choose{" "}
+              <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">
+                Mediusware AI
+              </span>
+            </h2>
+            <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-md mx-auto lg:mx-0">
+              Mediusware AI brings together retrieval-grounded answers and
+              strict multi-tenant isolation, so every organization gets a
+              private, accurate support agent without the risk of data bleeding
+              between tenants.
+            </p>
+
+            <div className="mt-7 flex flex-col sm:flex-row items-center lg:items-center gap-4">
+              <Link
+                href="/register"
+                className="px-7 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm rounded-xl shadow-xl shadow-blue-600/30 transition flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <span>Get Started Free</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:block w-px h-12 bg-white/10" />
+                {RATING.value !== null ? (
+                  <div className="text-left">
+                    <div className="flex items-center gap-1">
+                      <span className="text-lg font-extrabold text-white leading-none">
+                        {RATING.value.toFixed(1)}
+                      </span>
+                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      From {RATING.count}+ ideal customers
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-left">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-slate-600" />
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      No reviews yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
