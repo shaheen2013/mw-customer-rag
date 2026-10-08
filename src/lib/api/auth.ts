@@ -70,6 +70,32 @@ export interface ResetPasswordPayload {
   new_password: string;
 }
 
+export interface UserProfileResponse {
+  id: string;
+  email: string;
+  name: string | null;
+  phone_number: string | null;
+  avatar_url: string | null;
+  role: string;
+  tenant_id: string | null;
+  tenant_name: string | null;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface UserProfileUpdatePayload {
+  name?: string;
+  phone_number?: string;
+  avatar_url?: string;
+  email?: string;
+}
+
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+}
+
 export const authApi = {
   /**
    * Authenticate Platform Super Admin.
@@ -156,6 +182,45 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(data),
       skipAuth: true,
+    });
+  },
+
+  /**
+   * Fetch current user's profile details.
+   */
+  getProfile: async (): Promise<UserProfileResponse> => {
+    return apiClient<UserProfileResponse>('/api/v1/users/me');
+  },
+
+  /**
+   * Update personal profile fields (name, phone number, avatar URL, email).
+   */
+  updateProfile: async (data: UserProfileUpdatePayload): Promise<UserProfileResponse> => {
+    return apiClient<UserProfileResponse>('/api/v1/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Upload user profile avatar image (.png, .jpg, .jpeg, .webp, .svg, .gif <= 5MB).
+   */
+  uploadAvatar: async (file: File): Promise<{ status: string; message: string; avatar_url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient<{ status: string; message: string; avatar_url: string }>('/api/v1/users/me/avatar', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  /**
+   * Change account password after verifying current password.
+   */
+  changePassword: async (data: ChangePasswordPayload): Promise<{ status: string; message: string }> => {
+    return apiClient<{ status: string; message: string }>('/api/v1/users/me/password', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 

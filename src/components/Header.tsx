@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ChevronDown, Calendar } from 'lucide-react';
 
@@ -10,8 +12,33 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle }: HeaderProps) {
-  const { activeTenant, setActiveTenant } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { activeTenant, setActiveTenant, user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'platform_admin' || pathname?.startsWith('/admin');
+
+  const getInitials = (name?: string, email?: string) => {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    if (email && email.trim()) {
+      return email.trim().slice(0, 2).toUpperCase();
+    }
+    return isSuperAdmin ? 'SA' : 'TU';
+  };
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+  const resolvedAvatar = user?.avatarUrl
+    ? user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('data:')
+      ? user.avatarUrl
+      : `${apiBaseUrl}${user.avatarUrl.startsWith('/') ? '' : '/'}${user.avatarUrl}`
+    : null;
 
   const tenantsList = ['Acme Corp', 'TechFlow Inc', 'Nexus Solutions', 'Global Dynamic'];
 
@@ -64,9 +91,17 @@ export default function Header({ title, subtitle }: HeaderProps) {
         </div>
 
         {/* User Avatar Circle */}
-        <div className="w-8 h-8 rounded-md bg-[#1d3557] border border-blue-500/40 text-blue-200 font-bold flex items-center justify-center text-xs shadow-inner">
-          JS
-        </div>
+        <button
+          onClick={() => router.push(isSuperAdmin ? '/admin/profile' : '/profile')}
+          className="w-8 h-8 rounded-md bg-[#1d3557] border border-blue-500/40 text-blue-200 font-bold flex items-center justify-center text-xs shadow-inner overflow-hidden hover:border-blue-400 transition cursor-pointer"
+          title="Account Profile & Settings"
+        >
+          {resolvedAvatar ? (
+            <img src={resolvedAvatar} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+          ) : (
+            getInitials(user?.name, user?.email)
+          )}
+        </button>
       </div>
     </header>
   );

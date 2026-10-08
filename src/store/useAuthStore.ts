@@ -14,6 +14,9 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  phone?: string;
+  phoneNumber?: string;
+  avatarUrl?: string;
   tenantId?: string;
   tenantName?: string;
   tenantSlug?: string;
@@ -36,6 +39,7 @@ interface AuthState {
   setAuth: (user: User, tokens: AuthTokens) => void;
   setTokens: (tokens: AuthTokens) => void;
   setUser: (user: User | null) => void;
+  updateUser: (partial: Partial<User>) => void;
   setActiveTenant: (tenantName: string) => void;
   setHasHydrated: (state: boolean) => void;
   logout: () => void;
@@ -110,6 +114,16 @@ export const useAuthStore = create<AuthState>()(
           user,
           isAuthenticated: !!user,
         });
+      },
+
+      updateUser: (partial) => {
+        const current = get().user;
+        if (!current) return;
+        const updated = { ...current, ...partial };
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('mw_user', JSON.stringify(updated));
+        }
+        set({ user: updated });
       },
 
       setActiveTenant: (tenantName) => set({ activeTenant: tenantName }),

@@ -1,4 +1,19 @@
 import "@testing-library/jest-dom/vitest";
+import { vi } from "vitest";
+
+// Mock next/navigation for JSDOM test environments
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => "/dashboard",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 // Polyfill localStorage for Node.js v25+ JSDOM environment
 class LocalStorageMock {
@@ -43,3 +58,4 @@ if (typeof window !== "undefined") {
     configurable: true,
   });
 }
+
