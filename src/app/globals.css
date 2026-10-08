@@ -27,6 +27,39 @@
   }
 }
 
+/* Ambient motion for the landing-page chat preview */
+@keyframes float-a {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(12px, -16px); }
+}
+@keyframes float-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-14px, 12px); }
+}
+@keyframes float-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(10px, 10px) scale(1.08); }
+}
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-130%) rotate(-18deg); }
+  100% { transform: translateX(230%) rotate(-18deg); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes blink-cursor {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+.animate-float-a { animation: float-a 7s ease-in-out infinite; }
+.animate-float-b { animation: float-b 8.5s ease-in-out infinite; }
+.animate-float-c { animation: float-c 6s ease-in-out infinite; }
+.animate-shimmer-sweep { animation: shimmer-sweep 3.2s ease-in-out infinite; }
+.animate-fade-in-up { animation: fade-in-up 0.5s ease-out both; }
+.animate-blink-cursor { animation: blink-cursor 1s step-end infinite; }
+
 /* Custom scrollbars for clean SaaS UI */
 ::-webkit-scrollbar {
   width: 6px;
