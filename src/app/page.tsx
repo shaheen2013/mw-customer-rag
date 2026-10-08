@@ -1,5 +1,6 @@
 "use client";
 
+import CoreFeaturesSection from "@/components/landing-page/CoreFeaturesSection";
 import HeroSection from "@/components/landing-page/HeroSection";
 import TrustedIndustriesSection from "@/components/landing-page/TrustedIndustriesSection";
 import WhyChooseSection from "@/components/landing-page/WhyChooseSection";
@@ -158,6 +159,8 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <CoreFeaturesSection />
 
         {/* 3 Step Flow */}
         <section className="py-16 max-w-5xl mx-auto px-4 sm:px-6 text-center">
