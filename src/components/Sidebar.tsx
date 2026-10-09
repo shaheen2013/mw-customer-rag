@@ -5,6 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { resolveAvatarUrl } from '@/lib/api/auth';
 import {
   LayoutDashboard,
   Users,
@@ -72,12 +73,7 @@ export default function Sidebar() {
     return isSuperAdmin ? 'SA' : 'TU';
   };
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
-  const resolvedAvatar = user?.avatarUrl
-    ? user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('data:')
-      ? user.avatarUrl
-      : `${apiBaseUrl}${user.avatarUrl.startsWith('/') ? '' : '/'}${user.avatarUrl}`
-    : null;
+  const resolvedAvatar = resolveAvatarUrl(user?.avatarUrl);
 
   return (
     <aside className="w-64 bg-[#060a14] border-r border-[#1b2a47] h-screen sticky top-0 flex flex-col shrink-0 select-none">
