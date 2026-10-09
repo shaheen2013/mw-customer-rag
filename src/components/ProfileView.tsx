@@ -153,7 +153,8 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
     try {
       const updated = await authApi.updateProfile({
         name: name.trim(),
-        email: email.trim().toLowerCase(),
+        // email update is disabled — email cannot be changed from this form
+        // email: email.trim().toLowerCase(),
         phone_number: phoneNumber.trim(),
         avatar_url: avatarUrl || undefined,
       });
@@ -161,7 +162,7 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
       // Update local context
       updateUser({
         name: updated.name || name,
-        email: updated.email || email,
+        // email: updated.email || email,
         phoneNumber: updated.phone_number || phoneNumber,
         avatarUrl: updated.avatar_url || avatarUrl || undefined,
       });
