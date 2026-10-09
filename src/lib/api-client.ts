@@ -92,7 +92,9 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { params, skipAuth = false, headers = {}, ...customConfig } = options;
+  // Static file paths are public – never send auth headers for them.
+  const isStaticAsset = endpoint.includes('/api/v1/static/') || endpoint.includes('/static/avatars/');
+  const { params, skipAuth = isStaticAsset, headers = {}, ...customConfig } = options;
 
   const apiBase = getApiBaseUrl();
   let url = endpoint.startsWith('http')
