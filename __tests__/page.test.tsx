@@ -21,7 +21,7 @@ describe("Landing Page", () => {
       screen.getByText(/Grounded in Your Knowledge/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Create Organization Workspace/i),
+      screen.getAllByText(/Create Organization Workspace/i)[0],
     ).toBeInTheDocument();
   });
 });
