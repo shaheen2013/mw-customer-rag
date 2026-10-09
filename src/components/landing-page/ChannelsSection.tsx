@@ -26,7 +26,7 @@ export default function ChannelsSection() {
     <section className="py-16 sm:py-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className="relative rounded-[2rem] bg-gradient-to-br from-blue-500 via-sky-400 to-emerald-400 shadow-2xl shadow-blue-600/30 h-64 sm:h-80 flex items-center justify-center overflow-visible animate-fade-in-up">
-          <h2 className="relative z-10 text-2xl sm:text-3xl font-extrabold text-white text-center leading-snug px-10 drop-shadow-sm">
+          <h2 className="font-display relative z-10 text-2xl sm:text-3xl font-extrabold text-white text-center leading-snug px-10 drop-shadow-sm">
             Stay Connected
             <br />
             on All Channels

@@ -60,6 +60,25 @@
 .animate-fade-in-up { animation: fade-in-up 0.5s ease-out both; }
 .animate-blink-cursor { animation: blink-cursor 1s step-end infinite; }
 
+/* Landing-page type system: Space Grotesk for display, JetBrains Mono for citations/technical labels */
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+.font-mono-ui {
+  font-family: var(--font-jbmono), ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-a,
+  .animate-float-b,
+  .animate-float-c,
+  .animate-shimmer-sweep,
+  .animate-fade-in-up,
+  .animate-blink-cursor {
+    animation: none !important;
+  }
+}
+
 /* Custom scrollbars for clean SaaS UI */
 ::-webkit-scrollbar {
   width: 6px;

@@ -51,7 +51,7 @@ export default function CoreFeaturesSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Numbered feature list */}
           <div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-10">
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-10">
               Our Core Features
             </h2>
 

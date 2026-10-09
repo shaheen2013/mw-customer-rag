@@ -28,7 +28,7 @@ export default function TrustedIndustriesSection() {
         </p>
 
         <h2
-          className="mt-3 text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug animate-fade-in-up"
+          className="font-display mt-3 text-2xl sm:text-3xl font-bold text-white tracking-tight leading-snug animate-fade-in-up"
           style={{ animationDelay: "0.05s" }}
         >
           One Knowledge Base.{" "}

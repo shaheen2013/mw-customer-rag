@@ -1,18 +1,4 @@
-import {
-  ArrowRight,
-  Clock3,
-  Languages,
-  ShieldCheck,
-  Star,
-  Zap,
-} from "lucide-react";
-import Link from "next/link";
-
-// Swap these in once there's real review data — shown as "No reviews yet" until then.
-const RATING: { value: number | null; count: number | null | string } = {
-  value: 4.8,
-  count: "15k",
-};
+import { Clock3, Languages, ShieldCheck, Zap } from "lucide-react";
 
 const CARDS = [
   {
@@ -45,7 +31,7 @@ const CARDS = [
   },
 ];
 
-/** "Why choose us" pitch: a 2x2 benefits grid beside a closing headline and CTA. */
+/** "Why choose us" pitch: a 2x2 benefits grid beside a closing headline. */
 export default function WhyChooseSection() {
   return (
     <section className="py-16 sm:py-20 ">
@@ -86,7 +72,7 @@ export default function WhyChooseSection() {
 
           {/* Headline, copy, CTA */}
           <div className="order-1 lg:order-2 text-center lg:text-left">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
               Why Choose{" "}
               <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">
                 Mediusware AI
@@ -98,43 +84,6 @@ export default function WhyChooseSection() {
               private, accurate support agent without the risk of data bleeding
               between tenants.
             </p>
-
-            <div className="mt-7 flex flex-col sm:flex-row items-center lg:items-center gap-4">
-              <Link
-                href="/register"
-                className="px-7 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm rounded-xl shadow-xl shadow-blue-600/30 transition flex items-center justify-center gap-2 group cursor-pointer"
-              >
-                <span>Get Started Free</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <div className="flex items-center gap-3">
-                <span className="hidden sm:block w-px h-12 bg-white/10" />
-                {RATING.value !== null ? (
-                  <div className="text-left">
-                    <div className="flex items-center gap-1">
-                      <span className="text-lg font-extrabold text-white leading-none">
-                        {RATING.value.toFixed(1)}
-                      </span>
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      From {RATING.count}+ ideal customers
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-left">
-                    <div className="flex items-center gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="w-4 h-4 text-slate-600" />
-                      ))}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      No reviews yet
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>

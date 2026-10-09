@@ -184,7 +184,7 @@ export default function HeroSection() {
             <span>AI-POWERED MULTI-TENANT RAG PLATFORM</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-white leading-[1.15] mb-6">
+          <h1 className="font-display text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-white leading-[1.15] mb-6">
             Intelligent Customer Support,{" "}
             <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">
               Grounded in Your Knowledge.

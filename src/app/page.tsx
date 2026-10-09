@@ -2,7 +2,12 @@
 
 import ChannelsSection from "@/components/landing-page/ChannelsSection";
 import CoreFeaturesSection from "@/components/landing-page/CoreFeaturesSection";
+import FinalCtaSection from "@/components/landing-page/FinalCtaSection";
 import HeroSection from "@/components/landing-page/HeroSection";
+import HowItWorksSection from "@/components/landing-page/HowItWorksSection";
+import ProblemSolutionSection from "@/components/landing-page/ProblemSolutionSection";
+import ProductDemoSection from "@/components/landing-page/ProductDemoSection";
+import TrustSection from "@/components/landing-page/TrustSection";
 import TrustedIndustriesSection from "@/components/landing-page/TrustedIndustriesSection";
 import WhyChooseSection from "@/components/landing-page/WhyChooseSection";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -52,6 +57,18 @@ export default function LandingPage() {
             </div>
           </Link>
 
+          <nav className="hidden md:flex items-center gap-7 text-sm text-slate-400">
+            <Link href="#capabilities" className="hover:text-white transition">
+              Features
+            </Link>
+            <Link href="#how-it-works" className="hover:text-white transition">
+              How it Works
+            </Link>
+            <Link href="#trust" className="hover:text-white transition">
+              Trust
+            </Link>
+          </nav>
+
           <nav className="flex items-center gap-3 sm:gap-4">
             {isAuthenticated ? (
               <Link
@@ -88,11 +105,15 @@ export default function LandingPage() {
 
         <TrustedIndustriesSection />
 
+        <ProblemSolutionSection />
+
+        <ProductDemoSection />
+
         {/* Feature Highlights Grid */}
-        <section className="py-16 bg-[#070c18]/60">
+        <section id="capabilities" className="py-16 bg-[#070c18]/60 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Engineered for Enterprise Customer Support
               </h2>
               <p className="text-sm text-slate-400 mt-2">
@@ -111,8 +132,8 @@ export default function LandingPage() {
                   Knowledge Base Ingestion
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Upload PDFs, Markdown, Word documents, or sync live web pages
-                  for instant vector chunking and indexing.
+                  Upload PDFs, Markdown, or Word documents, or sync live web
+                  pages to build your searchable knowledge base.
                 </p>
               </div>
 
@@ -153,7 +174,7 @@ export default function LandingPage() {
                   Strict Tenant Isolation
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Zero data bleed. Every vector, conversation log, and API token
+                  Zero data bleed. Every document, conversation, and API token
                   is isolated per organization boundary.
                 </p>
               </div>
@@ -165,55 +186,13 @@ export default function LandingPage() {
 
         <ChannelsSection />
 
-        {/* 3 Step Flow */}
-        <section className="py-16 max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-10">
-            How It Works
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
-            <div className="p-5 bg-[#0b1324] border border-[#1b2a47] rounded-xl">
-              <span className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center mb-3">
-                1
-              </span>
-              <h3 className="text-sm font-semibold text-white mb-1">
-                Create Workspace
-              </h3>
-              <p className="text-xs text-slate-400">
-                Register your organization and invite team members to your
-                dedicated portal.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#0b1324] border border-[#1b2a47] rounded-xl">
-              <span className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center mb-3">
-                2
-              </span>
-              <h3 className="text-sm font-semibold text-white mb-1">
-                Connect Knowledge
-              </h3>
-              <p className="text-xs text-slate-400">
-                Upload company documents and crawl help centers for semantic
-                search.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#0b1324] border border-[#1b2a47] rounded-xl">
-              <span className="w-7 h-7 rounded-full bg-cyan-600 text-white font-bold text-xs flex items-center justify-center mb-3">
-                3
-              </span>
-              <h3 className="text-sm font-semibold text-white mb-1">
-                Deploy & Automate
-              </h3>
-              <p className="text-xs text-slate-400">
-                Embed the widget on your app to resolve customer queries 24/7
-                automatically.
-              </p>
-            </div>
-          </div>
-        </section>
+        <HowItWorksSection />
 
         <WhyChooseSection />
+
+        <TrustSection />
+
+        <FinalCtaSection />
       </main>
 
       {/* Footer */}
