@@ -33,8 +33,6 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
     "profile" | "password" | "account"
   >("profile");
 
-  console.log("user info", user);
-
   // Profile Form State
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
