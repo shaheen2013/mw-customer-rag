@@ -1,53 +1,77 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Header from '@/components/Header';
-import Link from 'next/link';
+import ConfirmDialog from "@/components/ConfirmDialog";
+import Header from "@/components/Header";
+import { useAuth } from "@/context/AuthContext";
 import {
-  Plus,
-  Search,
-  Filter,
-  Eye,
-  Edit2,
-  Trash2,
-  RefreshCw,
-  Loader2,
+  getFriendlyErrorMessage,
+  isTechnicalErrorMessage,
+} from "@/lib/api-client";
+import {
+  CreateTenantPayload,
+  TenantItem,
+  tenantsApi,
+  TenantStats,
+  UpdateTenantPayload,
+} from "@/lib/api/tenants";
+import {
   AlertCircle,
-  CheckCircle2,
-  X,
-  ShieldAlert,
   Building2,
   Check,
-} from 'lucide-react';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { useAuth } from '@/context/AuthContext';
-import { getFriendlyErrorMessage, isTechnicalErrorMessage } from '@/lib/api-client';
-import {
-  tenantsApi,
-  TenantItem,
-  TenantStats,
-  CreateTenantPayload,
-  UpdateTenantPayload,
-} from '@/lib/api/tenants';
+  CheckCircle2,
+  Edit2,
+  Eye,
+  Filter,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  Trash2,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 const PLAN_OPTIONS = [
-  { value: 'starter', label: 'Starter ($29/mo)', queries: 1000, storage: 1073741824 },
-  { value: 'growth', label: 'Growth ($79/mo)', queries: 5000, storage: 5368709120 },
-  { value: 'business', label: 'Business ($199/mo)', queries: 15000, storage: 10737418240 },
-  { value: 'enterprise', label: 'Enterprise (Custom)', queries: 50000, storage: 53687091200 },
+  {
+    value: "starter",
+    label: "Starter ($29/mo)",
+    queries: 1000,
+    storage: 1073741824,
+  },
+  {
+    value: "growth",
+    label: "Growth ($79/mo)",
+    queries: 5000,
+    storage: 5368709120,
+  },
+  {
+    value: "business",
+    label: "Business ($199/mo)",
+    queries: 15000,
+    storage: 10737418240,
+  },
+  {
+    value: "enterprise",
+    label: "Enterprise (Custom)",
+    queries: 50000,
+    storage: 53687091200,
+  },
 ];
 
-const DEFAULT_PLAN_TIER = 'growth';
+const DEFAULT_PLAN_TIER = "growth";
 
 // Looks up a plan's query entitlement from PLAN_OPTIONS instead of hardcoding it,
 // so defaults stay correct if plan limits ever change.
 const getQueryLimitForPlan = (planTier: string) =>
-  PLAN_OPTIONS.find((p) => p.value === planTier)?.queries ?? PLAN_OPTIONS[0].queries;
+  PLAN_OPTIONS.find((p) => p.value === planTier)?.queries ??
+  PLAN_OPTIONS[0].queries;
 
 export default function TenantsPage() {
   const { user } = useAuth();
   const isSuperAdmin =
-    user?.role === 'super_admin' || user?.role === 'platform_admin';
+    user?.role === "super_admin" || user?.role === "platform_admin";
 
   // Data states
   const [tenants, setTenants] = useState<TenantItem[]>([]);
@@ -62,9 +86,9 @@ export default function TenantsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Filters & Search
-  const [search, setSearch] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedPlan, setSelectedPlan] = useState<string>('all');
+  const [search, setSearch] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedPlan, setSelectedPlan] = useState<string>("all");
   const [isPlanFilterOpen, setIsPlanFilterOpen] = useState(false);
 
   // Modals & Dialogs
@@ -72,13 +96,15 @@ export default function TenantsPage() {
   const [editTarget, setEditTarget] = useState<TenantItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TenantItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [statusMenuTenantId, setStatusMenuTenantId] = useState<string | null>(null);
+  const [statusMenuTenantId, setStatusMenuTenantId] = useState<string | null>(
+    null,
+  );
   const [addFormError, setAddFormError] = useState<string | null>(null);
   const [editFormError, setEditFormError] = useState<string | null>(null);
 
   // Notifications
   const [notification, setNotification] = useState<{
-    type: 'success' | 'error';
+    type: "success" | "error";
     message: string;
   } | null>(null);
 
@@ -91,11 +117,11 @@ export default function TenantsPage() {
     status: string;
     monthly_query_limit: number;
   }>({
-    name: '',
-    slug: '',
-    admin_email: '',
+    name: "",
+    slug: "",
+    admin_email: "",
     plan_tier: DEFAULT_PLAN_TIER,
-    status: 'active',
+    status: "active",
     monthly_query_limit: getQueryLimitForPlan(DEFAULT_PLAN_TIER),
   });
 
@@ -107,10 +133,10 @@ export default function TenantsPage() {
     status: string;
     monthly_query_limit: number;
   }>({
-    name: '',
-    slug: '',
+    name: "",
+    slug: "",
     plan_tier: DEFAULT_PLAN_TIER,
-    status: 'active',
+    status: "active",
     monthly_query_limit: getQueryLimitForPlan(DEFAULT_PLAN_TIER),
   });
 
@@ -118,22 +144,33 @@ export default function TenantsPage() {
   const handleNameChange = (name: string) => {
     const slug = name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
     setAddForm((prev) => ({
       ...prev,
       name,
-      slug: prev.slug === '' || prev.slug === prev.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') ? slug : prev.slug,
+      slug:
+        prev.slug === "" ||
+        prev.slug ===
+          prev.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+          ? slug
+          : prev.slug,
     }));
   };
 
-  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    const timer = setTimeout(() => {
-      setNotification((curr) => (curr?.message === message ? null : curr));
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
+  const showNotification = useCallback(
+    (type: "success" | "error", message: string) => {
+      setNotification({ type, message });
+      const timer = setTimeout(() => {
+        setNotification((curr) => (curr?.message === message ? null : curr));
+      }, 5000);
+      return () => clearTimeout(timer);
+    },
+    [],
+  );
 
   // Fetch summary stats
   const fetchStats = useCallback(async () => {
@@ -142,7 +179,7 @@ export default function TenantsPage() {
       const data = await tenantsApi.getStats();
       setStats(data);
     } catch (err) {
-      console.error('Failed to fetch tenant stats:', err);
+      console.error("Failed to fetch tenant stats:", err);
     } finally {
       setStatsLoading(false);
     }
@@ -156,7 +193,7 @@ export default function TenantsPage() {
       const params: { status?: string; search?: string; limit?: number } = {
         limit: 100,
       };
-      if (selectedStatus !== 'all') {
+      if (selectedStatus !== "all") {
         params.status = selectedStatus;
       }
       if (search.trim()) {
@@ -166,9 +203,9 @@ export default function TenantsPage() {
       const res = await tenantsApi.getTenants(params);
       setTenants(res.data || []);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load tenants';
+      const msg = err instanceof Error ? err.message : "Failed to load tenants";
       setError(msg);
-      console.error('Failed to fetch tenants:', err);
+      console.error("Failed to fetch tenants:", err);
     } finally {
       setLoading(false);
     }
@@ -181,7 +218,7 @@ export default function TenantsPage() {
         const data = await tenantsApi.getStats();
         if (isMounted) setStats(data);
       } catch (err) {
-        console.error('Failed to fetch tenant stats:', err);
+        console.error("Failed to fetch tenant stats:", err);
       } finally {
         if (isMounted) setStatsLoading(false);
       }
@@ -201,9 +238,9 @@ export default function TenantsPage() {
 
   // Client-side plan filtering
   const filteredTenants = useMemo(() => {
-    if (selectedPlan === 'all') return tenants;
+    if (selectedPlan === "all") return tenants;
     return tenants.filter(
-      (t) => t.plan_tier?.toLowerCase() === selectedPlan.toLowerCase()
+      (t) => t.plan_tier?.toLowerCase() === selectedPlan.toLowerCase(),
     );
   }, [tenants, selectedPlan]);
 
@@ -228,24 +265,25 @@ export default function TenantsPage() {
 
       const created = await tenantsApi.createTenant(payload);
       showNotification(
-        'success',
+        "success",
         `Tenant "${created.name}" created successfully${
-          addForm.admin_email ? ` with admin ${addForm.admin_email}` : ''
-        }!`
+          addForm.admin_email ? ` with admin ${addForm.admin_email}` : ""
+        }!`,
       );
       setIsAddModalOpen(false);
       setAddForm({
-        name: '',
-        slug: '',
-        admin_email: '',
+        name: "",
+        slug: "",
+        admin_email: "",
         plan_tier: DEFAULT_PLAN_TIER,
-        status: 'active',
+        status: "active",
         monthly_query_limit: getQueryLimitForPlan(DEFAULT_PLAN_TIER),
       });
       fetchTenants();
       fetchStats();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create tenant';
+      const msg =
+        err instanceof Error ? err.message : "Failed to create tenant";
       setAddFormError(msg);
       // Refresh the list in the background so you can see whether the tenant
       // was actually created despite the error (the backend is not atomic —
@@ -265,11 +303,11 @@ export default function TenantsPage() {
     setEditForm({
       name: t.name,
       slug: t.slug,
-      plan_tier: t.plan_tier?.toLowerCase() || 'starter',
-      status: t.status?.toLowerCase() || 'active',
+      plan_tier: t.plan_tier?.toLowerCase() || "starter",
+      status: t.status?.toLowerCase() || "active",
       monthly_query_limit:
         t.entitlements?.monthly_query_limit ||
-        getQueryLimitForPlan(t.plan_tier?.toLowerCase() || 'starter'),
+        getQueryLimitForPlan(t.plan_tier?.toLowerCase() || "starter"),
     });
   };
 
@@ -293,12 +331,16 @@ export default function TenantsPage() {
       };
 
       await tenantsApi.updateTenant(editTarget.id, payload);
-      showNotification('success', `Tenant "${editForm.name}" updated successfully.`);
+      showNotification(
+        "success",
+        `Tenant "${editForm.name}" updated successfully.`,
+      );
       setEditTarget(null);
       fetchTenants();
       fetchStats();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update tenant';
+      const msg =
+        err instanceof Error ? err.message : "Failed to update tenant";
       setEditFormError(msg);
     } finally {
       setActionLoading(false);
@@ -308,7 +350,7 @@ export default function TenantsPage() {
   // Handle Quick Status Change
   const handleStatusChange = async (
     tenant: TenantItem,
-    newStatus: 'active' | 'trial' | 'suspended'
+    newStatus: "active" | "trial" | "suspended",
   ) => {
     setStatusMenuTenantId(null);
     if (tenant.status.toLowerCase() === newStatus) return;
@@ -316,14 +358,15 @@ export default function TenantsPage() {
     try {
       await tenantsApi.updateTenantStatus(tenant.id, newStatus);
       showNotification(
-        'success',
-        `Tenant "${tenant.name}" status updated to ${newStatus}.`
+        "success",
+        `Tenant "${tenant.name}" status updated to ${newStatus}.`,
       );
       fetchTenants();
       fetchStats();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to change status';
-      showNotification('error', msg);
+      const msg =
+        err instanceof Error ? err.message : "Failed to change status";
+      showNotification("error", msg);
     }
   };
 
@@ -334,15 +377,16 @@ export default function TenantsPage() {
     try {
       await tenantsApi.deleteTenant(deleteTarget.id);
       showNotification(
-        'success',
-        `Tenant "${deleteTarget.name}" and associated records deleted.`
+        "success",
+        `Tenant "${deleteTarget.name}" and associated records deleted.`,
       );
       setDeleteTarget(null);
       fetchTenants();
       fetchStats();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete tenant';
-      showNotification('error', msg);
+      const msg =
+        err instanceof Error ? err.message : "Failed to delete tenant";
+      showNotification("error", msg);
     } finally {
       setActionLoading(false);
     }
@@ -353,34 +397,35 @@ export default function TenantsPage() {
     const used = t.queries_count ?? 0;
     const limit =
       t.entitlements?.monthly_query_limit ??
-      getQueryLimitForPlan(t.plan_tier?.toLowerCase() || 'starter');
+      getQueryLimitForPlan(t.plan_tier?.toLowerCase() || "starter");
     return `${used.toLocaleString()} / ${
       limit >= 1000000
         ? `${(limit / 1000000).toFixed(0)}M`
         : limit >= 1000
-        ? `${(limit / 1000).toFixed(0)}K`
-        : limit
+          ? `${(limit / 1000).toFixed(0)}K`
+          : limit
     }`;
   };
 
   const formatStorage = (t: TenantItem) => {
-    const bytes = t.storage_bytes ?? t.entitlements?.storage_bytes ?? 1073741824;
+    const bytes =
+      t.storage_bytes ?? t.entitlements?.storage_bytes ?? 1073741824;
     return `${(bytes / 1073741824).toFixed(1)} GB`;
   };
 
   const formatPlanName = (plan: string) => {
-    if (!plan) return 'Starter';
+    if (!plan) return "Starter";
     return plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase();
   };
 
   const formatDate = (iso: string | null | undefined) => {
-    if (!iso) return 'Just now';
+    if (!iso) return "Just now";
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+      return d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       });
     } catch {
       return iso;
@@ -391,7 +436,9 @@ export default function TenantsPage() {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
         <ShieldAlert className="w-12 h-12 text-rose-400 mb-3" />
-        <h3 className="text-base font-bold text-white mb-1">Access Restricted</h3>
+        <h3 className="text-base font-bold text-white mb-1">
+          Access Restricted
+        </h3>
         <p className="text-xs text-slate-400 mb-4">
           This portal is reserved strictly for Platform Super Administrators.
         </p>
@@ -414,7 +461,8 @@ export default function TenantsPage() {
         <div className="flex items-center gap-2 text-xs text-blue-300">
           <ShieldAlert className="w-4 h-4 text-blue-400" />
           <span>
-            Super Admin Governance Mode: You have full platform access to manage, isolate, and audit all tenant organizations.
+            Super Admin Governance Mode: You have full platform access to
+            manage, isolate, and audit all tenant organizations.
           </span>
         </div>
         <button
@@ -425,7 +473,9 @@ export default function TenantsPage() {
           className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
           title="Sync with backend"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+          />
           <span>Sync</span>
         </button>
       </div>
@@ -434,13 +484,13 @@ export default function TenantsPage() {
       {notification && (
         <div
           className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${
-            notification.type === 'success'
-              ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300'
-              : 'bg-rose-950/60 border-rose-500/30 text-rose-300'
+            notification.type === "success"
+              ? "bg-emerald-950/60 border-emerald-500/30 text-emerald-300"
+              : "bg-rose-950/60 border-rose-500/30 text-rose-300"
           }`}
         >
           <div className="flex items-center gap-2">
-            {notification.type === 'success' ? (
+            {notification.type === "success" ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             ) : (
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
@@ -478,29 +528,37 @@ export default function TenantsPage() {
             >
               <Filter className="w-3.5 h-3.5 text-slate-400" />
               <span>
-                {selectedPlan === 'all'
-                  ? 'All Plans'
-                  : formatPlanName(selectedPlan) + ' Plan'}
+                {selectedPlan === "all"
+                  ? "All Plans"
+                  : formatPlanName(selectedPlan) + " Plan"}
               </span>
             </button>
 
             {isPlanFilterOpen && (
               <div className="absolute left-0 mt-1.5 w-44 bg-[#0d1527] border border-[#1b2a47] rounded-lg shadow-xl z-20 py-1">
-                {['all', 'starter', 'growth', 'business', 'enterprise'].map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      setSelectedPlan(p);
-                      setIsPlanFilterOpen(false);
-                    }}
-                    className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${
-                      selectedPlan === p ? 'text-blue-400 font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    <span>{p === 'all' ? 'All Plans' : formatPlanName(p)}</span>
-                    {selectedPlan === p && <Check className="w-3.5 h-3.5 text-blue-400" />}
-                  </button>
-                ))}
+                {["all", "starter", "growth", "business", "enterprise"].map(
+                  (p) => (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        setSelectedPlan(p);
+                        setIsPlanFilterOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${
+                        selectedPlan === p
+                          ? "text-blue-400 font-semibold"
+                          : "text-slate-300"
+                      }`}
+                    >
+                      <span>
+                        {p === "all" ? "All Plans" : formatPlanName(p)}
+                      </span>
+                      {selectedPlan === p && (
+                        <Check className="w-3.5 h-3.5 text-blue-400" />
+                      )}
+                    </button>
+                  ),
+                )}
               </div>
             )}
           </div>
@@ -508,18 +566,18 @@ export default function TenantsPage() {
           {/* Status Quick Filter Pills */}
           <div className="hidden md:flex items-center gap-1.5 bg-[#0d1527] border border-[#1b2a47] rounded-lg p-1">
             {[
-              { id: 'all', label: 'All' },
-              { id: 'active', label: 'Active' },
-              { id: 'trial', label: 'Trial' },
-              { id: 'suspended', label: 'Suspended' },
+              { id: "all", label: "All" },
+              { id: "active", label: "Active" },
+              { id: "trial", label: "Trial" },
+              { id: "suspended", label: "Suspended" },
             ].map((st) => (
               <button
                 key={st.id}
                 onClick={() => setSelectedStatus(st.id)}
                 className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${
                   selectedStatus === st.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 {st.label}
@@ -536,11 +594,11 @@ export default function TenantsPage() {
             placeholder="Search tenant name or slug..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-dark w-full pl-9 pr-8 text-xs"
+            className="input-dark w-full !pl-9 pr-8 text-xs"
           />
           {search && (
             <button
-              onClick={() => setSearch('')}
+              onClick={() => setSearch("")}
               className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200"
             >
               <X className="w-3.5 h-3.5" />
@@ -552,12 +610,14 @@ export default function TenantsPage() {
       {/* 4 Tenant Counter Cards matching Screenshot 2 with Live Backend Data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div
-          onClick={() => setSelectedStatus('all')}
+          onClick={() => setSelectedStatus("all")}
           className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${
-            selectedStatus === 'all' ? 'border-blue-500/60 bg-[#0e1933]' : ''
+            selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
           }`}
         >
-          <p className="text-xs font-medium text-slate-400 mb-1">Total Tenants</p>
+          <p className="text-xs font-medium text-slate-400 mb-1">
+            Total Tenants
+          </p>
           <p className="text-3xl font-bold text-white">
             {statsLoading ? (
               <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
@@ -568,9 +628,11 @@ export default function TenantsPage() {
         </div>
 
         <div
-          onClick={() => setSelectedStatus('active')}
+          onClick={() => setSelectedStatus("active")}
           className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${
-            selectedStatus === 'active' ? 'border-emerald-500/60 bg-[#0e1933]' : ''
+            selectedStatus === "active"
+              ? "border-emerald-500/60 bg-[#0e1933]"
+              : ""
           }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Active</p>
@@ -584,9 +646,9 @@ export default function TenantsPage() {
         </div>
 
         <div
-          onClick={() => setSelectedStatus('trial')}
+          onClick={() => setSelectedStatus("trial")}
           className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${
-            selectedStatus === 'trial' ? 'border-amber-500/60 bg-[#0e1933]' : ''
+            selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
           }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Trial</p>
@@ -600,9 +662,11 @@ export default function TenantsPage() {
         </div>
 
         <div
-          onClick={() => setSelectedStatus('suspended')}
+          onClick={() => setSelectedStatus("suspended")}
           className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${
-            selectedStatus === 'suspended' ? 'border-rose-500/60 bg-[#0e1933]' : ''
+            selectedStatus === "suspended"
+              ? "border-rose-500/60 bg-[#0e1933]"
+              : ""
           }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Suspended</p>
@@ -621,12 +685,16 @@ export default function TenantsPage() {
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center text-slate-400 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            <p className="text-xs font-medium">Loading tenants from server...</p>
+            <p className="text-xs font-medium">
+              Loading tenants from server...
+            </p>
           </div>
         ) : error ? (
           <div className="p-8 flex flex-col items-center justify-center text-center">
             <AlertCircle className="w-8 h-8 text-rose-400 mb-2" />
-            <p className="text-sm font-semibold text-white mb-1">Could not load tenants</p>
+            <p className="text-sm font-semibold text-white mb-1">
+              Could not load tenants
+            </p>
             <p className="text-xs text-slate-400 mb-4">{error}</p>
             <button onClick={fetchTenants} className="btn-secondary text-xs">
               Retry
@@ -635,17 +703,19 @@ export default function TenantsPage() {
         ) : filteredTenants.length === 0 ? (
           <div className="p-12 flex flex-col items-center justify-center text-center">
             <Building2 className="w-10 h-10 text-slate-600 mb-3" />
-            <p className="text-sm font-semibold text-white mb-1">No tenants found</p>
+            <p className="text-sm font-semibold text-white mb-1">
+              No tenants found
+            </p>
             <p className="text-xs text-slate-400 mb-4">
               {search
                 ? `No tenant matched "${search}".`
-                : 'No tenants match the current filters.'}
+                : "No tenants match the current filters."}
             </p>
             <button
               onClick={() => {
-                setSearch('');
-                setSelectedStatus('all');
-                setSelectedPlan('all');
+                setSearch("");
+                setSelectedStatus("all");
+                setSelectedPlan("all");
               }}
               className="btn-secondary text-xs"
             >
@@ -669,13 +739,15 @@ export default function TenantsPage() {
               </thead>
               <tbody className="text-xs text-slate-300">
                 {filteredTenants.map((t) => {
-                  const statusNormalized = (t.status || 'active').toLowerCase();
+                  const statusNormalized = (t.status || "active").toLowerCase();
                   return (
                     <tr key={t.id} className="table-row">
                       <td className="py-3.5 px-4 font-semibold text-white">
                         <div className="flex flex-col">
                           <span className="text-white hover:text-blue-400 transition font-medium">
-                            <Link href={`/admin/tenants/${t.id}`}>{t.name}</Link>
+                            <Link href={`/admin/tenants/${t.id}`}>
+                              {t.name}
+                            </Link>
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
                             {t.slug}
@@ -701,7 +773,7 @@ export default function TenantsPage() {
                         <button
                           onClick={() =>
                             setStatusMenuTenantId(
-                              statusMenuTenantId === t.id ? null : t.id
+                              statusMenuTenantId === t.id ? null : t.id,
                             )
                           }
                           className="cursor-pointer group flex items-center gap-1.5"
@@ -709,11 +781,11 @@ export default function TenantsPage() {
                         >
                           <span
                             className={
-                              statusNormalized === 'active'
-                                ? 'badge-active'
-                                : statusNormalized === 'trial'
-                                ? 'badge-warning'
-                                : 'badge-danger'
+                              statusNormalized === "active"
+                                ? "badge-active"
+                                : statusNormalized === "trial"
+                                  ? "badge-warning"
+                                  : "badge-danger"
                             }
                           >
                             {statusNormalized.charAt(0).toUpperCase() +
@@ -724,22 +796,26 @@ export default function TenantsPage() {
                         {/* Status Change Dropdown */}
                         {statusMenuTenantId === t.id && (
                           <div className="absolute left-4 top-10 w-32 bg-[#0d1527] border border-[#1b2a47] rounded-lg shadow-2xl z-30 py-1">
-                            {(['active', 'trial', 'suspended'] as const).map((s) => (
-                              <button
-                                key={s}
-                                onClick={() => handleStatusChange(t, s)}
-                                className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${
-                                  statusNormalized === s
-                                    ? 'text-blue-400 font-semibold'
-                                    : 'text-slate-300'
-                                }`}
-                              >
-                                <span>{s.charAt(0).toUpperCase() + s.slice(1)}</span>
-                                {statusNormalized === s && (
-                                  <Check className="w-3 h-3 text-blue-400" />
-                                )}
-                              </button>
-                            ))}
+                            {(["active", "trial", "suspended"] as const).map(
+                              (s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => handleStatusChange(t, s)}
+                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${
+                                    statusNormalized === s
+                                      ? "text-blue-400 font-semibold"
+                                      : "text-slate-300"
+                                  }`}
+                                >
+                                  <span>
+                                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                                  </span>
+                                  {statusNormalized === s && (
+                                    <Check className="w-3 h-3 text-blue-400" />
+                                  )}
+                                </button>
+                              ),
+                            )}
                           </div>
                         )}
                       </td>
@@ -801,7 +877,8 @@ export default function TenantsPage() {
               Add New Client Organization
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Provisions a dedicated multi-tenant workspace with isolated storage and permissions.
+              Provisions a dedicated multi-tenant workspace with isolated
+              storage and permissions.
             </p>
 
             {addFormError && (
@@ -810,16 +887,18 @@ export default function TenantsPage() {
                 <div>
                   <span>{getFriendlyErrorMessage(addFormError)}</span>
                   <p className="mt-1 text-rose-400/80">
-                    A tenant may already have been created despite this error — close
-                    this dialog and check the tenant list before resubmitting, to avoid
-                    creating a duplicate.
+                    A tenant may already have been created despite this error —
+                    close this dialog and check the tenant list before
+                    resubmitting, to avoid creating a duplicate.
                   </p>
                   {isTechnicalErrorMessage(addFormError) && (
                     <details className="mt-1.5">
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
                         Show technical details
                       </summary>
-                      <p className="mt-1 text-rose-400/70 break-words">{addFormError}</p>
+                      <p className="mt-1 text-rose-400/70 break-words">
+                        {addFormError}
+                      </p>
                     </details>
                   )}
                 </div>
@@ -829,7 +908,8 @@ export default function TenantsPage() {
             <form onSubmit={handleCreateTenant} className="space-y-4">
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
-                  Organization / Tenant Name <span className="text-rose-400">*</span>
+                  Organization / Tenant Name{" "}
+                  <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -858,14 +938,18 @@ export default function TenantsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-300 mb-1">Commercial Plan</label>
+                  <label className="block text-xs text-slate-300 mb-1">
+                    Commercial Plan
+                  </label>
                   <select
                     value={addForm.plan_tier}
                     onChange={(e) => {
                       setAddForm((prev) => ({
                         ...prev,
                         plan_tier: e.target.value,
-                        monthly_query_limit: getQueryLimitForPlan(e.target.value),
+                        monthly_query_limit: getQueryLimitForPlan(
+                          e.target.value,
+                        ),
                       }));
                     }}
                     className="input-dark w-full text-xs"
@@ -879,11 +963,16 @@ export default function TenantsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-slate-300 mb-1">Initial Status</label>
+                  <label className="block text-xs text-slate-300 mb-1">
+                    Initial Status
+                  </label>
                   <select
                     value={addForm.status}
                     onChange={(e) =>
-                      setAddForm((prev) => ({ ...prev, status: e.target.value }))
+                      setAddForm((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
                     }
                     className="input-dark w-full text-xs"
                   >
@@ -903,12 +992,16 @@ export default function TenantsPage() {
                   placeholder="admin@cyberdyne.com"
                   value={addForm.admin_email}
                   onChange={(e) =>
-                    setAddForm((prev) => ({ ...prev, admin_email: e.target.value }))
+                    setAddForm((prev) => ({
+                      ...prev,
+                      admin_email: e.target.value,
+                    }))
                   }
                   className="input-dark w-full text-xs"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">
-                  If provided, an admin user is created and a temporary password is sent.
+                  If provided, an admin user is created and a temporary password
+                  is sent.
                 </p>
               </div>
 
@@ -921,7 +1014,7 @@ export default function TenantsPage() {
                   min={100}
                   step={100}
                   value={addForm.monthly_query_limit}
-                  disabled={addForm.plan_tier !== 'enterprise'}
+                  disabled={addForm.plan_tier !== "enterprise"}
                   onChange={(e) =>
                     setAddForm((prev) => ({
                       ...prev,
@@ -930,9 +1023,10 @@ export default function TenantsPage() {
                   }
                   className="input-dark w-full text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                {addForm.plan_tier !== 'enterprise' && (
+                {addForm.plan_tier !== "enterprise" && (
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Set by the selected plan. Choose Enterprise (Custom) to set a custom limit.
+                    Set by the selected plan. Choose Enterprise (Custom) to set
+                    a custom limit.
                   </p>
                 )}
               </div>
@@ -953,7 +1047,9 @@ export default function TenantsPage() {
                   disabled={actionLoading}
                   className="btn-primary text-xs flex items-center gap-1.5"
                 >
-                  {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {actionLoading && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
                   <span>Create Tenant</span>
                 </button>
               </div>
@@ -980,7 +1076,8 @@ export default function TenantsPage() {
               Edit Organization Settings
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Update commercial tier, identifiers, and resource entitlements for {editTarget.name}.
+              Update commercial tier, identifiers, and resource entitlements for{" "}
+              {editTarget.name}.
             </p>
 
             {editFormError && (
@@ -993,7 +1090,9 @@ export default function TenantsPage() {
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
                         Show technical details
                       </summary>
-                      <p className="mt-1 text-rose-400/70 break-words">{editFormError}</p>
+                      <p className="mt-1 text-rose-400/70 break-words">
+                        {editFormError}
+                      </p>
                     </details>
                   )}
                 </div>
@@ -1017,7 +1116,9 @@ export default function TenantsPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-slate-300 mb-1">Tenant Slug</label>
+                <label className="block text-xs text-slate-300 mb-1">
+                  Tenant Slug
+                </label>
                 <input
                   type="text"
                   required
@@ -1031,7 +1132,9 @@ export default function TenantsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-300 mb-1">Plan Tier</label>
+                  <label className="block text-xs text-slate-300 mb-1">
+                    Plan Tier
+                  </label>
                   <select
                     value={editForm.plan_tier}
                     onChange={(e) =>
@@ -1039,7 +1142,7 @@ export default function TenantsPage() {
                         ...prev,
                         plan_tier: e.target.value,
                         monthly_query_limit:
-                          e.target.value === 'enterprise'
+                          e.target.value === "enterprise"
                             ? prev.monthly_query_limit
                             : getQueryLimitForPlan(e.target.value),
                       }))
@@ -1055,11 +1158,16 @@ export default function TenantsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-slate-300 mb-1">Status</label>
+                  <label className="block text-xs text-slate-300 mb-1">
+                    Status
+                  </label>
                   <select
                     value={editForm.status}
                     onChange={(e) =>
-                      setEditForm((prev) => ({ ...prev, status: e.target.value }))
+                      setEditForm((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
                     }
                     className="input-dark w-full text-xs"
                   >
@@ -1079,7 +1187,7 @@ export default function TenantsPage() {
                   min={100}
                   step={100}
                   value={editForm.monthly_query_limit}
-                  disabled={editForm.plan_tier !== 'enterprise'}
+                  disabled={editForm.plan_tier !== "enterprise"}
                   onChange={(e) =>
                     setEditForm((prev) => ({
                       ...prev,
@@ -1088,9 +1196,10 @@ export default function TenantsPage() {
                   }
                   className="input-dark w-full text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                {editForm.plan_tier !== 'enterprise' && (
+                {editForm.plan_tier !== "enterprise" && (
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Set by the selected plan. Choose Enterprise (Custom) to set a custom limit.
+                    Set by the selected plan. Choose Enterprise (Custom) to set
+                    a custom limit.
                   </p>
                 )}
               </div>
@@ -1111,7 +1220,9 @@ export default function TenantsPage() {
                   disabled={actionLoading}
                   className="btn-primary text-xs flex items-center gap-1.5"
                 >
-                  {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {actionLoading && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
                   <span>Save Changes</span>
                 </button>
               </div>
@@ -1127,10 +1238,11 @@ export default function TenantsPage() {
         subject={deleteTarget?.name}
         description={
           <span>
-            Are you sure you want to permanently delete{' '}
-            <strong className="text-white">{deleteTarget?.name}</strong>? This action
-            will completely delete all associated workspaces, users, knowledge base
-            documents, embeddings, and chat history. This cannot be undone.
+            Are you sure you want to permanently delete{" "}
+            <strong className="text-white">{deleteTarget?.name}</strong>? This
+            action will completely delete all associated workspaces, users,
+            knowledge base documents, embeddings, and chat history. This cannot
+            be undone.
           </span>
         }
         confirmLabel="Delete Tenant"
