@@ -1,7 +1,4 @@
-import { apiClient } from '@/lib/api-client';
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+import { apiClient, getApiBaseUrl } from '@/lib/api-client';
 
 /**
  * Resolves avatar URL, converting legacy /static/ paths to /api/v1/static/
@@ -21,7 +18,7 @@ export function resolveAvatarUrl(url: string | null | undefined): string | null 
     ? url
     : `/${url}`;
 
-  return `${API_BASE_URL}${normalizedPath}`;
+  return `${getApiBaseUrl()}${normalizedPath}`;
 }
 
 export interface AdminLoginPayload {
