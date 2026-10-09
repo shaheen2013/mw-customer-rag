@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useAuth } from '@/context/AuthContext';
+import { getFriendlyErrorMessage, isTechnicalErrorMessage } from '@/lib/api-client';
 import {
   tenantsApi,
   TenantItem,
@@ -35,6 +36,13 @@ const PLAN_OPTIONS = [
   { value: 'business', label: 'Business ($199/mo)', queries: 15000, storage: 10737418240 },
   { value: 'enterprise', label: 'Enterprise (Custom)', queries: 50000, storage: 53687091200 },
 ];
+
+const DEFAULT_PLAN_TIER = 'growth';
+
+// Looks up a plan's query entitlement from PLAN_OPTIONS instead of hardcoding it,
+// so defaults stay correct if plan limits ever change.
+const getQueryLimitForPlan = (planTier: string) =>
+  PLAN_OPTIONS.find((p) => p.value === planTier)?.queries ?? PLAN_OPTIONS[0].queries;
 
 export default function TenantsPage() {
   const { user } = useAuth();
@@ -65,6 +73,8 @@ export default function TenantsPage() {
   const [deleteTarget, setDeleteTarget] = useState<TenantItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [statusMenuTenantId, setStatusMenuTenantId] = useState<string | null>(null);
+  const [addFormError, setAddFormError] = useState<string | null>(null);
+  const [editFormError, setEditFormError] = useState<string | null>(null);
 
   // Notifications
   const [notification, setNotification] = useState<{
@@ -84,9 +94,9 @@ export default function TenantsPage() {
     name: '',
     slug: '',
     admin_email: '',
-    plan_tier: 'growth',
+    plan_tier: DEFAULT_PLAN_TIER,
     status: 'active',
-    monthly_query_limit: 5000,
+    monthly_query_limit: getQueryLimitForPlan(DEFAULT_PLAN_TIER),
   });
 
   // Edit form fields
@@ -99,9 +109,9 @@ export default function TenantsPage() {
   }>({
     name: '',
     slug: '',
-    plan_tier: 'growth',
+    plan_tier: DEFAULT_PLAN_TIER,
     status: 'active',
-    monthly_query_limit: 5000,
+    monthly_query_limit: getQueryLimitForPlan(DEFAULT_PLAN_TIER),
   });
 
   // Auto-slugify for Add Tenant modal
@@ -203,6 +213,7 @@ export default function TenantsPage() {
     if (!addForm.name.trim()) return;
 
     setActionLoading(true);
+    setAddFormError(null);
     try {
       const payload: CreateTenantPayload = {
         name: addForm.name.trim(),
@@ -227,15 +238,21 @@ export default function TenantsPage() {
         name: '',
         slug: '',
         admin_email: '',
-        plan_tier: 'growth',
+        plan_tier: DEFAULT_PLAN_TIER,
         status: 'active',
-        monthly_query_limit: 5000,
+        monthly_query_limit: getQueryLimitForPlan(DEFAULT_PLAN_TIER),
       });
       fetchTenants();
       fetchStats();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to create tenant';
-      showNotification('error', msg);
+      setAddFormError(msg);
+      // Refresh the list in the background so you can see whether the tenant
+      // was actually created despite the error (the backend is not atomic —
+      // see the warning below the form). This does NOT auto-close the modal
+      // or let you resubmit silently; you decide what to do next.
+      fetchTenants();
+      fetchStats();
     } finally {
       setActionLoading(false);
     }
@@ -244,12 +261,15 @@ export default function TenantsPage() {
   // Open Edit Modal
   const openEditModal = (t: TenantItem) => {
     setEditTarget(t);
+    setEditFormError(null);
     setEditForm({
       name: t.name,
       slug: t.slug,
       plan_tier: t.plan_tier?.toLowerCase() || 'starter',
       status: t.status?.toLowerCase() || 'active',
-      monthly_query_limit: t.entitlements?.monthly_query_limit || 1000,
+      monthly_query_limit:
+        t.entitlements?.monthly_query_limit ||
+        getQueryLimitForPlan(t.plan_tier?.toLowerCase() || 'starter'),
     });
   };
 
@@ -259,6 +279,7 @@ export default function TenantsPage() {
     if (!editTarget) return;
 
     setActionLoading(true);
+    setEditFormError(null);
     try {
       const payload: UpdateTenantPayload = {
         name: editForm.name.trim(),
@@ -278,7 +299,7 @@ export default function TenantsPage() {
       fetchStats();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to update tenant';
-      showNotification('error', msg);
+      setEditFormError(msg);
     } finally {
       setActionLoading(false);
     }
@@ -330,7 +351,9 @@ export default function TenantsPage() {
   // Formatter helpers
   const formatQueries = (t: TenantItem) => {
     const used = t.queries_count ?? 0;
-    const limit = t.entitlements?.monthly_query_limit ?? 1000;
+    const limit =
+      t.entitlements?.monthly_query_limit ??
+      getQueryLimitForPlan(t.plan_tier?.toLowerCase() || 'starter');
     return `${used.toLocaleString()} / ${
       limit >= 1000000
         ? `${(limit / 1000000).toFixed(0)}M`
@@ -437,7 +460,10 @@ export default function TenantsPage() {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setAddFormError(null);
+              setIsAddModalOpen(true);
+            }}
             className="btn-primary flex items-center gap-2 text-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -762,7 +788,10 @@ export default function TenantsPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="card-panel p-6 max-w-lg w-full shadow-2xl relative">
             <button
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => {
+                setAddFormError(null);
+                setIsAddModalOpen(false);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
             >
               <X className="w-5 h-5" />
@@ -774,6 +803,28 @@ export default function TenantsPage() {
             <p className="text-xs text-slate-400 mb-4">
               Provisions a dedicated multi-tenant workspace with isolated storage and permissions.
             </p>
+
+            {addFormError && (
+              <div className="mb-4 p-2.5 bg-rose-950/60 border border-rose-500/30 rounded-md flex items-start gap-2 text-xs text-rose-300">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <div>
+                  <span>{getFriendlyErrorMessage(addFormError)}</span>
+                  <p className="mt-1 text-rose-400/80">
+                    A tenant may already have been created despite this error — close
+                    this dialog and check the tenant list before resubmitting, to avoid
+                    creating a duplicate.
+                  </p>
+                  {isTechnicalErrorMessage(addFormError) && (
+                    <details className="mt-1.5">
+                      <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
+                        Show technical details
+                      </summary>
+                      <p className="mt-1 text-rose-400/70 break-words">{addFormError}</p>
+                    </details>
+                  )}
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleCreateTenant} className="space-y-4">
               <div>
@@ -811,11 +862,10 @@ export default function TenantsPage() {
                   <select
                     value={addForm.plan_tier}
                     onChange={(e) => {
-                      const selected = PLAN_OPTIONS.find((p) => p.value === e.target.value);
                       setAddForm((prev) => ({
                         ...prev,
                         plan_tier: e.target.value,
-                        monthly_query_limit: selected?.queries || 5000,
+                        monthly_query_limit: getQueryLimitForPlan(e.target.value),
                       }));
                     }}
                     className="input-dark w-full text-xs"
@@ -869,22 +919,31 @@ export default function TenantsPage() {
                 <input
                   type="number"
                   min={100}
-                  step={500}
+                  step={100}
                   value={addForm.monthly_query_limit}
+                  disabled={addForm.plan_tier !== 'enterprise'}
                   onChange={(e) =>
                     setAddForm((prev) => ({
                       ...prev,
                       monthly_query_limit: Number(e.target.value),
                     }))
                   }
-                  className="input-dark w-full text-xs"
+                  className="input-dark w-full text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+                {addForm.plan_tier !== 'enterprise' && (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Set by the selected plan. Choose Enterprise (Custom) to set a custom limit.
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-[#1b2a47]">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setAddFormError(null);
+                    setIsAddModalOpen(false);
+                  }}
                   className="btn-secondary text-xs"
                 >
                   Cancel
@@ -908,7 +967,10 @@ export default function TenantsPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="card-panel p-6 max-w-lg w-full shadow-2xl relative">
             <button
-              onClick={() => setEditTarget(null)}
+              onClick={() => {
+                setEditFormError(null);
+                setEditTarget(null);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
             >
               <X className="w-5 h-5" />
@@ -920,6 +982,23 @@ export default function TenantsPage() {
             <p className="text-xs text-slate-400 mb-4">
               Update commercial tier, identifiers, and resource entitlements for {editTarget.name}.
             </p>
+
+            {editFormError && (
+              <div className="mb-4 p-2.5 bg-rose-950/60 border border-rose-500/30 rounded-md flex items-start gap-2 text-xs text-rose-300">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <div>
+                  <span>{getFriendlyErrorMessage(editFormError)}</span>
+                  {isTechnicalErrorMessage(editFormError) && (
+                    <details className="mt-1.5">
+                      <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
+                        Show technical details
+                      </summary>
+                      <p className="mt-1 text-rose-400/70 break-words">{editFormError}</p>
+                    </details>
+                  )}
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleUpdateTenant} className="space-y-4">
               <div>
@@ -956,7 +1035,14 @@ export default function TenantsPage() {
                   <select
                     value={editForm.plan_tier}
                     onChange={(e) =>
-                      setEditForm((prev) => ({ ...prev, plan_tier: e.target.value }))
+                      setEditForm((prev) => ({
+                        ...prev,
+                        plan_tier: e.target.value,
+                        monthly_query_limit:
+                          e.target.value === 'enterprise'
+                            ? prev.monthly_query_limit
+                            : getQueryLimitForPlan(e.target.value),
+                      }))
                     }
                     className="input-dark w-full text-xs"
                   >
@@ -991,22 +1077,31 @@ export default function TenantsPage() {
                 <input
                   type="number"
                   min={100}
-                  step={500}
+                  step={100}
                   value={editForm.monthly_query_limit}
+                  disabled={editForm.plan_tier !== 'enterprise'}
                   onChange={(e) =>
                     setEditForm((prev) => ({
                       ...prev,
                       monthly_query_limit: Number(e.target.value),
                     }))
                   }
-                  className="input-dark w-full text-xs"
+                  className="input-dark w-full text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+                {editForm.plan_tier !== 'enterprise' && (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Set by the selected plan. Choose Enterprise (Custom) to set a custom limit.
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-[#1b2a47]">
                 <button
                   type="button"
-                  onClick={() => setEditTarget(null)}
+                  onClick={() => {
+                    setEditFormError(null);
+                    setEditTarget(null);
+                  }}
                   className="btn-secondary text-xs"
                 >
                   Cancel
