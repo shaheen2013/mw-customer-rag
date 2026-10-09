@@ -37,6 +37,8 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
     "profile" | "password" | "account"
   >("profile");
 
+  console.log("user info", user);
+
   // Profile Form State
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,6 +55,7 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
+  const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
   // Password Change State
   const [currentPassword, setCurrentPassword] = useState("");
@@ -369,6 +372,7 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
   };
 
   const passwordStrength = getPasswordStrength(newPassword);
+  const resolvedAvatarSrc = getResolvedAvatarUrl(avatarUrl);
 
   return (
     <div className="w-full space-y-4 pb-4">
@@ -385,11 +389,12 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
           {/* Avatar Area with Hover Overlay */}
           <div className="relative group shrink-0">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#121f38] border border-blue-500/40 overflow-hidden flex items-center justify-center shadow-lg shadow-blue-950/40">
-              {avatarUrl ? (
+              {resolvedAvatarSrc && resolvedAvatarSrc !== failedAvatarSrc ? (
                 <img
-                  src={getResolvedAvatarUrl(avatarUrl) || ""}
+                  src={resolvedAvatarSrc}
                   alt={name || "User Avatar"}
                   className="w-full h-full object-cover"
+                  onError={() => setFailedAvatarSrc(resolvedAvatarSrc)}
                 />
               ) : (
                 <span className="text-2xl font-bold text-blue-300 tracking-wider">

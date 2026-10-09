@@ -28,6 +28,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [failedAvatarSrc, setFailedAvatarSrc] = React.useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'super_admin' || pathname.startsWith('/admin');
 
@@ -142,8 +143,13 @@ export default function Sidebar() {
             title="View & Edit Profile / Change Password"
           >
             <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-blue-500/30">
-              {resolvedAvatar ? (
-                <img src={resolvedAvatar} alt={user?.name || 'User'} className="w-full h-full object-cover" />
+              {resolvedAvatar && resolvedAvatar !== failedAvatarSrc ? (
+                <img
+                  src={resolvedAvatar}
+                  alt={user?.name || 'User'}
+                  className="w-full h-full object-cover"
+                  onError={() => setFailedAvatarSrc(resolvedAvatar)}
+                />
               ) : (
                 getInitials(user?.name, user?.email)
               )}
