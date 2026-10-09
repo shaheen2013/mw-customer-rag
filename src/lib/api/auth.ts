@@ -1,4 +1,25 @@
-import { apiClient } from '@/lib/api-client';
+import { apiClient, getApiBaseUrl } from '@/lib/api-client';
+
+/**
+ * Resolves avatar URL, converting legacy /static/ paths to /api/v1/static/
+ * and prepending the backend base URL.
+ */
+export function resolveAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  // Convert legacy /static/ paths to /api/v1/static/
+  const normalizedPath = url.startsWith('/static/')
+    ? `/api/v1${url}`
+    : url.startsWith('static/')
+    ? `/api/v1/${url}`
+    : url.startsWith('/')
+    ? url
+    : `/${url}`;
+
+  return `${getApiBaseUrl()}${normalizedPath}`;
+}
 
 export interface AdminLoginPayload {
   email: string;

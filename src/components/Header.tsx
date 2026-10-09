@@ -4,6 +4,7 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { resolveAvatarUrl } from '@/lib/api/auth';
 import { ChevronDown, Calendar } from 'lucide-react';
 
 interface HeaderProps {
@@ -34,12 +35,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
     return isSuperAdmin ? 'SA' : 'TU';
   };
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
-  const resolvedAvatar = user?.avatarUrl
-    ? user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('data:')
-      ? user.avatarUrl
-      : `${apiBaseUrl}${user.avatarUrl.startsWith('/') ? '' : '/'}${user.avatarUrl}`
-    : null;
+  const resolvedAvatar = resolveAvatarUrl(user?.avatarUrl);
 
   const tenantsList = ['Acme Corp', 'TechFlow Inc', 'Nexus Solutions', 'Global Dynamic'];
 

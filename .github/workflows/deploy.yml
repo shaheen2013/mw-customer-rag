@@ -43,7 +43,10 @@ jobs:
         run: echo "tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
       - name: Build image
-        run: docker build -t mw-customer-rag:${{ steps.meta.outputs.tag }} .
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://customer.mediusware.com \
+            -t mw-customer-rag:${{ steps.meta.outputs.tag }} .
 
       - name: Export image
         run: docker save mw-customer-rag:${{ steps.meta.outputs.tag }} | gzip > /tmp/mw-customer-rag.tar.gz
@@ -92,6 +95,17 @@ jobs:
 
             echo "Stopping old container (frees port)..."
             docker rm -f mw-customer-rag-old >/dev/null 2>&1 || true
+
+            # Stop and remove any other container holding port 3024 (e.g. from docker-compose)
+            for cid in $(docker ps -q --filter "publish=3024"); do
+              cname=$(docker inspect --format '{{.Name}}' "$cid" 2>/dev/null | sed 's/^\///')
+              if [ "$cname" != "mw-customer-rag" ]; then
+                echo "Stopping conflicting container on port 3024: $cname ($cid)"
+                docker stop "$cid" >/dev/null 2>&1 || true
+                docker rm -f "$cid" >/dev/null 2>&1 || true
+              fi
+            done
+
             if [ -n "$(docker ps -aq -f name=^mw-customer-rag$)" ]; then
               docker stop mw-customer-rag >/dev/null
               docker rename mw-customer-rag mw-customer-rag-old

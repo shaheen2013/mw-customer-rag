@@ -1,7 +1,18 @@
 import { useAuthStore } from '@/store/useAuthStore';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    // When running in browser on a production domain, never allow requests to hit localhost
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const envUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      if (envUrl && !envUrl.includes('localhost')) {
+        return envUrl;
+      }
+      return '';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+}
 
 export interface ApiErrorResponse {
   error?: {
@@ -83,7 +94,10 @@ export async function apiClient<T>(
 ): Promise<T> {
   const { params, skipAuth = false, headers = {}, ...customConfig } = options;
 
-  let url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const apiBase = getApiBaseUrl();
+  let url = endpoint.startsWith('http')
+    ? endpoint
+    : `${apiBase}${apiBase && !endpoint.startsWith('/') ? '/' : ''}${endpoint}`;
 
   if (params) {
     const searchParams = new URLSearchParams();

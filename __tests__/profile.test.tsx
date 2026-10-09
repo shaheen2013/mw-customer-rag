@@ -6,14 +6,18 @@ import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/store/useAuthStore';
 
 // Mock authApi
-vi.mock('@/lib/api/auth', () => ({
-  authApi: {
-    getProfile: vi.fn(),
-    updateProfile: vi.fn(),
-    uploadAvatar: vi.fn(),
-    changePassword: vi.fn(),
-  },
-}));
+vi.mock('@/lib/api/auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api/auth')>();
+  return {
+    ...actual,
+    authApi: {
+      getProfile: vi.fn(),
+      updateProfile: vi.fn(),
+      uploadAvatar: vi.fn(),
+      changePassword: vi.fn(),
+    },
+  };
+});
 
 describe('ProfileView and Password Change Feature', () => {
   beforeEach(() => {
@@ -140,5 +144,22 @@ describe('ProfileView and Password Change Feature', () => {
       });
       expect(screen.getByText(/password has been updated successfully/i)).toBeInTheDocument();
     });
+  });
+
+  it('correctly normalizes legacy and new avatar URLs', async () => {
+    const { resolveAvatarUrl } = await import('@/lib/api/auth');
+    
+    // Legacy /static/ path in database
+    expect(resolveAvatarUrl('/static/avatars/avatar_123.png')).toContain('/api/v1/static/avatars/avatar_123.png');
+    
+    // New /api/v1/static/ path
+    expect(resolveAvatarUrl('/api/v1/static/avatars/avatar_123.png')).toContain('/api/v1/static/avatars/avatar_123.png');
+    
+    // External URL
+    expect(resolveAvatarUrl('https://example.com/avatar.jpg')).toBe('https://example.com/avatar.jpg');
+    
+    // Null / undefined
+    expect(resolveAvatarUrl(null)).toBeNull();
+    expect(resolveAvatarUrl(undefined)).toBeNull();
   });
 });
