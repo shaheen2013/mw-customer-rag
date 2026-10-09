@@ -9,6 +9,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, role: UserRole, tenantName?: string) => void;
   logout: () => void;
+  updateUser: (partial: Partial<User>) => void;
   activeTenant: string;
   setActiveTenant: (name: string) => void;
   tokens: {
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setAuth = useAuthStore((state) => state.setAuth);
   const setUser = useAuthStore((state) => state.setUser);
+  const updateUser = useAuthStore((state) => state.updateUser);
   const setActiveTenant = useAuthStore((state) => state.setActiveTenant);
   const storeLogout = useAuthStore((state) => state.logout);
 
@@ -73,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         login,
         logout,
+        updateUser,
         activeTenant,
         setActiveTenant,
         tokens,
