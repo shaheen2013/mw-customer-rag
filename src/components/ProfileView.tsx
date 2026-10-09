@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import { useAuth } from '@/context/AuthContext';
-import { authApi } from '@/lib/api/auth';
+import { authApi, resolveAvatarUrl } from '@/lib/api/auth';
 import {
   User as UserIcon,
   Mail,
@@ -69,8 +69,6 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
-
   // Compute initials for avatar fallback
   const getInitials = (userName?: string | null, userEmail?: string | null) => {
     if (userName && userName.trim()) {
@@ -87,13 +85,7 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
   };
 
   // Resolve full avatar URL
-  const getResolvedAvatarUrl = (url: string | null) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-      return url;
-    }
-    return `${apiBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getResolvedAvatarUrl = (url: string | null) => resolveAvatarUrl(url);
 
   // Fetch live profile from backend on mount
   useEffect(() => {
@@ -315,7 +307,7 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
   const passwordStrength = getPasswordStrength(newPassword);
 
   return (
-    <div className="space-y-4 max-w-4xl pb-4">
+    <div className="w-full space-y-4 pb-4">
       <Header
         title={isAdminView ? 'Super Admin Profile' : 'Account Profile'}
         subtitle="Manage your personal identity, contact details, profile picture, and account credentials."

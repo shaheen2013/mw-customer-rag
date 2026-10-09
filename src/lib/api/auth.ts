@@ -1,5 +1,29 @@
 import { apiClient } from '@/lib/api-client';
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+
+/**
+ * Resolves avatar URL, converting legacy /static/ paths to /api/v1/static/
+ * and prepending the backend base URL.
+ */
+export function resolveAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  // Convert legacy /static/ paths to /api/v1/static/
+  const normalizedPath = url.startsWith('/static/')
+    ? `/api/v1${url}`
+    : url.startsWith('static/')
+    ? `/api/v1/${url}`
+    : url.startsWith('/')
+    ? url
+    : `/${url}`;
+
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
 export interface AdminLoginPayload {
   email: string;
   password: string;
