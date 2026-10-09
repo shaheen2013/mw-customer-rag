@@ -1,8 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import ProfileView from '@/components/ProfileView';
+import ProfileView from "@/components/ProfileView";
 
 export default function TenantProfilePage() {
-  return <ProfileView isAdminView={false} />;
+  return (
+    <div className="w-full">
+      <ProfileView isAdminView={false} />;
+    </div>
+  );
 }

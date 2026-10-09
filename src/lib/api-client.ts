@@ -37,6 +37,31 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Backends sometimes leak a raw exception string (provider HTTP errors, stack-like
+ * text, MDN links) into the error `detail` field. Detect that shape and swap in a
+ * clean, generic message instead of showing it to the user verbatim.
+ */
+export function isTechnicalErrorMessage(message: string): boolean {
+  return (
+    message.length > 120 ||
+    /https?:\/\//i.test(message) ||
+    /\b\d{3}\b.*(forbidden|not found|internal server error|bad gateway|unauthorized)/i.test(
+      message
+    )
+  );
+}
+
+export function getFriendlyErrorMessage(message: string): string {
+  if (!isTechnicalErrorMessage(message)) return message;
+
+  if (/resend|welcome (password|email)/i.test(message)) {
+    return 'The invite email could not be sent to the admin address. You can try again, or create the tenant without an admin email and invite them later.';
+  }
+
+  return 'Something went wrong on the server. Please try again, or contact support if this keeps happening.';
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   skipAuth?: boolean;
