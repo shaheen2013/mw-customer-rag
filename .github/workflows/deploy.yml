@@ -43,7 +43,10 @@ jobs:
         run: echo "tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
       - name: Build image
-        run: docker build -t mw-customer-rag:${{ steps.meta.outputs.tag }} .
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://customer.mediusware.com \
+            -t mw-customer-rag:${{ steps.meta.outputs.tag }} .
 
       - name: Export image
         run: docker save mw-customer-rag:${{ steps.meta.outputs.tag }} | gzip > /tmp/mw-customer-rag.tar.gz
