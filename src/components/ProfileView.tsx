@@ -315,7 +315,7 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
   const passwordStrength = getPasswordStrength(newPassword);
 
   return (
-    <div className="space-y-4 max-w-4xl pb-4">
+    <div className="w-full space-y-4 pb-4">
       <Header
         title={isAdminView ? 'Super Admin Profile' : 'Account Profile'}
         subtitle="Manage your personal identity, contact details, profile picture, and account credentials."
