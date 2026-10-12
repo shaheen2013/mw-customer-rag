@@ -57,58 +57,47 @@ export default function TenantDetailPage() {
     monthly_query_limit: 5000,
   });
 
+  // Pure helper (no state writes) so the shape of editForm only lives in one
+  // place, even though the effect and the imperative refresh below each own
+  // their own setState sequencing (React effects shouldn't call a shared
+  // stateful callback, which is what eslint's set-state-in-effect rule flags).
+  const buildEditForm = (data: TenantDetailResponse) => ({
+    name: data.name,
+    slug: data.slug,
+    plan_tier: data.plan_tier?.toLowerCase() || 'starter',
+    status: data.status?.toLowerCase() || 'active',
+    monthly_query_limit: data.entitlements?.monthly_query_limit || 1000,
+  });
+
+  // Imperative refresh used after Edit / Status-change actions.
   const fetchTenant = useCallback(async () => {
     if (!tenantId) return;
-    setLoading(true);
-    setError(null);
     try {
       const data = await tenantsApi.getTenant(tenantId);
       setTenant(data);
-      setEditForm({
-        name: data.name,
-        slug: data.slug,
-        plan_tier: data.plan_tier?.toLowerCase() || 'starter',
-        status: data.status?.toLowerCase() || 'active',
-        monthly_query_limit: data.entitlements?.monthly_query_limit || 1000,
-      });
+      setEditForm(buildEditForm(data));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load tenant details';
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Failed to load tenant details');
     } finally {
       setLoading(false);
     }
   }, [tenantId]);
 
+  // Initial load on mount / tenantId change.
   useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      if (!tenantId) return;
-      try {
-        const data = await tenantsApi.getTenant(tenantId);
-        if (isMounted) {
-          setTenant(data);
-          setEditForm({
-            name: data.name,
-            slug: data.slug,
-            plan_tier: data.plan_tier?.toLowerCase() || 'starter',
-            status: data.status?.toLowerCase() || 'active',
-            monthly_query_limit: data.entitlements?.monthly_query_limit || 1000,
-          });
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(
-            err instanceof Error ? err.message : 'Failed to load tenant details'
-          );
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      isMounted = false;
-    };
+    if (!tenantId) return;
+    tenantsApi
+      .getTenant(tenantId)
+      .then((data) => {
+        setTenant(data);
+        setEditForm(buildEditForm(data));
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load tenant details');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [tenantId]);
 
   const handleUpdate = async (e: React.FormEvent) => {
