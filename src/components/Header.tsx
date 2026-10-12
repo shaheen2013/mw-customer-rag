@@ -29,9 +29,17 @@ interface HeaderProps {
   };
   /** Opt-in: hides the tenant dropdown entirely (e.g. on pages listing all tenants, where "switch tenant" doesn't apply). */
   hideTenantSwitcher?: boolean;
+  /** Opt-in: hides the "Last 30 days" date filter pill (e.g. on pages with no date-ranged data, like Profile). */
+  hideDateFilter?: boolean;
 }
 
-export default function Header({ title, subtitle, tenantSwitcher, hideTenantSwitcher = false }: HeaderProps) {
+export default function Header({
+  title,
+  subtitle,
+  tenantSwitcher,
+  hideTenantSwitcher = false,
+  hideDateFilter = false,
+}: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { activeTenant, setActiveTenant, user } = useAuth();
@@ -67,10 +75,12 @@ export default function Header({ title, subtitle, tenantSwitcher, hideTenantSwit
 
       <div className="flex items-center gap-3 self-start md:self-auto">
         {/* Date Filter Pill */}
-        <button className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>Last 30 days</span>
-        </button>
+        {!hideDateFilter && (
+          <button className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span>Last 30 days</span>
+          </button>
+        )}
 
         {/* Tenant Selector Dropdown */}
         {!hideTenantSwitcher && (

@@ -1,19 +1,18 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Header from '@/components/Header';
-import Link from 'next/link';
-import { ResponsiveContainer, AreaChart, Area, Tooltip } from 'recharts';
-import { AlertCircle } from 'lucide-react';
-import { mockDatabase } from '@/lib/db';
+import Header from "@/components/Header";
+import { mockDatabase } from "@/lib/db";
+import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 
 const tenantTrendData = [
-  { day: 'Sep 1', queries: 400, convs: 280 },
-  { day: 'Sep 5', queries: 900, convs: 610 },
-  { day: 'Sep 10', queries: 1600, convs: 1100 },
-  { day: 'Sep 15', queries: 2700, convs: 1800 },
-  { day: 'Sep 20', queries: 3500, convs: 2400 },
-  { day: 'Sep 24', queries: 4200, convs: 2840 },
+  { day: "Sep 1", queries: 400, convs: 280 },
+  { day: "Sep 5", queries: 900, convs: 610 },
+  { day: "Sep 10", queries: 1600, convs: 1100 },
+  { day: "Sep 15", queries: 2700, convs: 1800 },
+  { day: "Sep 20", queries: 3500, convs: 2400 },
+  { day: "Sep 24", queries: 4200, convs: 2840 },
 ];
 
 export default function TenantDashboardPage() {
@@ -27,15 +26,22 @@ export default function TenantDashboardPage() {
       {/* Top 4 Cards matching PDF Screenshot 5 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="card-panel p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">Queries Used</p>
+          <p className="text-xs font-medium text-slate-400 mb-1">
+            Queries Used
+          </p>
           <div className="flex items-baseline justify-between">
-            <p className="text-2xl font-bold text-white">4,200 <span className="text-xs font-normal text-slate-400">/ 10K</span></p>
+            <p className="text-2xl font-bold text-white">
+              4,200{" "}
+              <span className="text-xs font-normal text-slate-400">/ 10K</span>
+            </p>
             <span className="text-xs font-semibold text-emerald-400">+14%</span>
           </div>
         </div>
 
         <div className="card-panel p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">Conversations</p>
+          <p className="text-xs font-medium text-slate-400 mb-1">
+            Conversations
+          </p>
           <div className="flex items-baseline justify-between">
             <p className="text-2xl font-bold text-white">2,840</p>
             <span className="text-xs font-semibold text-emerald-400">+19%</span>
@@ -51,7 +57,9 @@ export default function TenantDashboardPage() {
         </div>
 
         <div className="card-panel p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">Knowledge Sources</p>
+          <p className="text-xs font-medium text-slate-400 mb-1">
+            Knowledge Sources
+          </p>
           <div className="flex items-baseline justify-between">
             <p className="text-2xl font-bold text-white">186</p>
             <span className="text-xs font-semibold text-emerald-400">+12</span>
@@ -63,7 +71,9 @@ export default function TenantDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Queries & Conversations trend chart */}
         <div className="lg:col-span-2 card-panel p-5">
-          <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-4">Queries & Conversations</h3>
+          <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-4">
+            Queries & Conversations
+          </h3>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={tenantTrendData}>
@@ -74,9 +84,20 @@ export default function TenantDashboardPage() {
                   </linearGradient>
                 </defs>
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0d1527', borderColor: '#1b2a47', borderRadius: '6px', color: '#fff' }}
+                  contentStyle={{
+                    backgroundColor: "#0d1527",
+                    borderColor: "#1b2a47",
+                    borderRadius: "6px",
+                    color: "#fff",
+                  }}
                 />
-                <Area type="monotone" dataKey="queries" stroke="#3b82f6" strokeWidth={2} fill="url(#tenantColor)" />
+                <Area
+                  type="monotone"
+                  dataKey="queries"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  fill="url(#tenantColor)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -85,14 +106,21 @@ export default function TenantDashboardPage() {
         {/* Knowledge Health panel */}
         <div className="card-panel p-5 flex flex-col justify-between">
           <div>
-            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-6">Knowledge Health</h3>
+            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-6">
+              Knowledge Health
+            </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-medium">Indexed sources</span>
+                <span className="text-slate-400 font-medium">
+                  Indexed sources
+                </span>
                 <span className="text-white font-bold text-sm">186</span>
               </div>
               <div className="w-full bg-[#121e36] h-1.5 rounded-full overflow-hidden">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: '92%' }}></div>
+                <div
+                  className="bg-emerald-500 h-full rounded-full"
+                  style={{ width: "92%" }}
+                ></div>
               </div>
 
               <div className="pt-2 flex justify-between items-center text-xs">
@@ -104,7 +132,9 @@ export default function TenantDashboardPage() {
               </div>
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 mt-4">14 questions fallback due to unindexed documentation.</p>
+          <p className="text-[11px] text-slate-500 mt-4">
+            14 questions fallback due to unindexed documentation.
+          </p>
         </div>
       </div>
 
@@ -113,7 +143,9 @@ export default function TenantDashboardPage() {
         {/* Top Topic Table */}
         <div className="card-panel overflow-hidden">
           <div className="p-4 border-b border-[#1b2a47]">
-            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Top Customer Topics</h3>
+            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              Top Customer Topics
+            </h3>
           </div>
           <table className="w-full text-left border-collapse">
             <thead>
@@ -126,16 +158,42 @@ export default function TenantDashboardPage() {
             </thead>
             <tbody className="text-xs text-slate-300">
               {[
-                { topic: 'Pricing & Billing', questions: '940', trend: 'Sep 24', rate: '96.2%' },
-                { topic: 'API Integration', questions: '580', trend: 'Sep 24', rate: '88.4%' },
-                { topic: 'Refund & Returns Policy', questions: '420', trend: 'Sep 24', rate: '99.0%' },
-                { topic: 'Security & SLA', questions: '210', trend: 'Sep 24', rate: '91.5%' },
+                {
+                  topic: "Pricing & Billing",
+                  questions: "940",
+                  trend: "Sep 24",
+                  rate: "96.2%",
+                },
+                {
+                  topic: "API Integration",
+                  questions: "580",
+                  trend: "Sep 24",
+                  rate: "88.4%",
+                },
+                {
+                  topic: "Refund & Returns Policy",
+                  questions: "420",
+                  trend: "Sep 24",
+                  rate: "99.0%",
+                },
+                {
+                  topic: "Security & SLA",
+                  questions: "210",
+                  trend: "Sep 24",
+                  rate: "91.5%",
+                },
               ].map((row, i) => (
                 <tr key={i} className="table-row">
-                  <td className="py-3 px-4 font-semibold text-white">{row.topic}</td>
-                  <td className="py-3 px-4 font-medium text-blue-400">{row.questions}</td>
+                  <td className="py-3 px-4 font-semibold text-white">
+                    {row.topic}
+                  </td>
+                  <td className="py-3 px-4 font-medium text-blue-400">
+                    {row.questions}
+                  </td>
                   <td className="py-3 px-4 text-slate-400">{row.trend}</td>
-                  <td className="py-3 px-4 font-semibold text-emerald-400">{row.rate}</td>
+                  <td className="py-3 px-4 font-semibold text-emerald-400">
+                    {row.rate}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -145,8 +203,15 @@ export default function TenantDashboardPage() {
         {/* Recent Conversations Table */}
         <div className="card-panel overflow-hidden">
           <div className="p-4 border-b border-[#1b2a47] flex justify-between items-center">
-            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Recent Conversations</h3>
-            <Link href="/conversations" className="text-xs text-blue-400 hover:underline">View All</Link>
+            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              Recent Conversations
+            </h3>
+            <Link
+              href="/conversations"
+              className="text-xs text-blue-400 hover:underline"
+            >
+              View All
+            </Link>
           </div>
           <table className="w-full text-left border-collapse">
             <thead>
@@ -161,14 +226,26 @@ export default function TenantDashboardPage() {
                 <tr key={i} className="table-row">
                   <td className="py-3 px-4">
                     <p className="font-semibold text-white">{c.visitor}</p>
-                    <p className="text-[11px] text-slate-400 truncate max-w-xs">{c.topic}</p>
+                    <p className="text-[11px] text-slate-400 truncate max-w-xs">
+                      {c.topic}
+                    </p>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={c.status === 'Answered' ? 'badge-active' : c.status === 'Weak Answer' ? 'badge-warning' : 'badge-danger'}>
+                    <span
+                      className={
+                        c.status === "Answered"
+                          ? "badge-active"
+                          : c.status === "Weak Answer"
+                            ? "badge-warning"
+                            : "badge-danger"
+                      }
+                    >
                       {c.status}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-400 text-right">{c.date}</td>
+                  <td className="py-3 px-4 text-slate-400 text-right">
+                    {c.date}
+                  </td>
                 </tr>
               ))}
             </tbody>

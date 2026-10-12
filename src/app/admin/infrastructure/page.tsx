@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Header from '@/components/Header';
+import Header from "@/components/Header";
 
 export default function AdminInfrastructurePage() {
   return (
@@ -9,6 +8,7 @@ export default function AdminInfrastructurePage() {
       <Header
         title="Infrastructure & Cluster Health"
         subtitle="Monitor database connections, vector index nodes, and scraping workers."
+        hideTenantSwitcher
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="card-panel p-5">
