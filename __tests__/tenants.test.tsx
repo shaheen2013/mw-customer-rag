@@ -144,6 +144,9 @@ describe('Super Admin Tenants Page & CRUD Integration', () => {
     const nameInput = screen.getByPlaceholderText('e.g. Cyberdyne Systems');
     fireEvent.change(nameInput, { target: { value: 'OmniCorp Global' } });
 
+    const emailInput = screen.getByPlaceholderText('admin@cyberdyne.com');
+    fireEvent.change(emailInput, { target: { value: 'admin@omnicorp.com' } });
+
     const createSubmitBtn = screen.getByRole('button', { name: /Create Tenant/i });
     const form = createSubmitBtn.closest('form')!;
     fireEvent.submit(form);
@@ -153,8 +156,63 @@ describe('Super Admin Tenants Page & CRUD Integration', () => {
         expect.objectContaining({
           name: 'OmniCorp Global',
           slug: 'omnicorp-global',
+          admin_email: 'admin@omnicorp.com',
         })
       );
+    });
+  });
+
+  it('validates that Initial Tenant Admin Email is required when creating tenant', async () => {
+    render(
+      <AuthProvider>
+        <TenantsPage />
+      </AuthProvider>
+    );
+
+    const addButton = screen.getByRole('button', { name: /Add Tenant/i });
+    fireEvent.click(addButton);
+
+    const nameInput = screen.getByPlaceholderText('e.g. Cyberdyne Systems');
+    fireEvent.change(nameInput, { target: { value: 'Initech Systems' } });
+
+    const createSubmitBtn = screen.getByRole('button', { name: /Create Tenant/i });
+    const form = createSubmitBtn.closest('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(screen.getByText('Initial Tenant Admin Email is required.')).toBeInTheDocument();
+    });
+    expect(tenantsApi.createTenant).not.toHaveBeenCalled();
+  });
+
+  it('displays conflict error when admin email is not unique', async () => {
+    (tenantsApi.createTenant as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error("User with email 'existing@initech.com' already exists.")
+    );
+
+    render(
+      <AuthProvider>
+        <TenantsPage />
+      </AuthProvider>
+    );
+
+    const addButton = screen.getByRole('button', { name: /Add Tenant/i });
+    fireEvent.click(addButton);
+
+    const nameInput = screen.getByPlaceholderText('e.g. Cyberdyne Systems');
+    fireEvent.change(nameInput, { target: { value: 'Initech Systems' } });
+
+    const emailInput = screen.getByPlaceholderText('admin@cyberdyne.com');
+    fireEvent.change(emailInput, { target: { value: 'existing@initech.com' } });
+
+    const createSubmitBtn = screen.getByRole('button', { name: /Create Tenant/i });
+    const form = createSubmitBtn.closest('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("User with email 'existing@initech.com' already exists.")
+      ).toBeInTheDocument();
     });
   });
 

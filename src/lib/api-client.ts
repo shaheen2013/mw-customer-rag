@@ -56,7 +56,7 @@ export function getFriendlyErrorMessage(message: string): string {
   if (!isTechnicalErrorMessage(message)) return message;
 
   if (/resend|welcome (password|email)/i.test(message)) {
-    return 'The invite email could not be sent to the admin address. You can try again, or create the tenant without an admin email and invite them later.';
+    return 'The invite email could not be sent to the admin address. Please verify the email address and try again, or contact support.';
   }
 
   return 'Something went wrong on the server. Please try again, or contact support if this keeps happening.';

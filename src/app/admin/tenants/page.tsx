@@ -247,17 +247,34 @@ export default function TenantsPage() {
   // Handle Create Tenant
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addForm.name.trim()) return;
+    const trimmedName = addForm.name.trim();
+    const trimmedEmail = addForm.admin_email.trim();
+
+    if (!trimmedName) {
+      setAddFormError("Organization / Tenant Name is required.");
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setAddFormError("Initial Tenant Admin Email is required.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setAddFormError("Please enter a valid email address.");
+      return;
+    }
 
     setActionLoading(true);
     setAddFormError(null);
     try {
       const payload: CreateTenantPayload = {
-        name: addForm.name.trim(),
+        name: trimmedName,
         slug: addForm.slug.trim() || undefined,
         plan_tier: addForm.plan_tier,
         status: addForm.status,
-        admin_email: addForm.admin_email.trim() || undefined,
+        admin_email: trimmedEmail,
         entitlements: {
           monthly_query_limit: Number(addForm.monthly_query_limit),
         },
@@ -266,9 +283,7 @@ export default function TenantsPage() {
       const created = await tenantsApi.createTenant(payload);
       showNotification(
         "success",
-        `Tenant "${created.name}" created successfully${
-          addForm.admin_email ? ` with admin ${addForm.admin_email}` : ""
-        }!`,
+        `Tenant "${created.name}" created successfully with admin ${trimmedEmail}!`,
       );
       setIsAddModalOpen(false);
       setAddForm({
@@ -285,10 +300,6 @@ export default function TenantsPage() {
       const msg =
         err instanceof Error ? err.message : "Failed to create tenant";
       setAddFormError(msg);
-      // Refresh the list in the background so you can see whether the tenant
-      // was actually created despite the error (the backend is not atomic —
-      // see the warning below the form). This does NOT auto-close the modal
-      // or let you resubmit silently; you decide what to do next.
       fetchTenants();
       fetchStats();
     } finally {
@@ -886,11 +897,6 @@ export default function TenantsPage() {
                 <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                 <div>
                   <span>{getFriendlyErrorMessage(addFormError)}</span>
-                  <p className="mt-1 text-rose-400/80">
-                    A tenant may already have been created despite this error —
-                    close this dialog and check the tenant list before
-                    resubmitting, to avoid creating a duplicate.
-                  </p>
                   {isTechnicalErrorMessage(addFormError) && (
                     <details className="mt-1.5">
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
@@ -985,10 +991,12 @@ export default function TenantsPage() {
 
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
-                  Initial Tenant Admin Email (Optional)
+                  Initial Tenant Admin Email{" "}
+                  <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="email"
+                  required
                   placeholder="admin@cyberdyne.com"
                   value={addForm.admin_email}
                   onChange={(e) =>
@@ -1000,8 +1008,8 @@ export default function TenantsPage() {
                   className="input-dark w-full text-xs"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">
-                  If provided, an admin user is created and a temporary password
-                  is sent.
+                  An initial tenant admin user is created and a temporary password
+                  is sent. Must be unique across all workspaces.
                 </p>
               </div>
 

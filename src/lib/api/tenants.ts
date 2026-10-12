@@ -62,7 +62,7 @@ export interface TenantDetailResponse extends TenantItem {
 
 export interface CreateTenantPayload {
   name: string;
-  admin_email?: string;
+  admin_email: string;
   plan_tier?: 'starter' | 'growth' | 'business' | 'enterprise' | string;
   status?: 'active' | 'trial' | 'suspended' | string;
   slug?: string;
