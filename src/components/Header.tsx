@@ -27,9 +27,11 @@ interface HeaderProps {
     activeLabel: string;
     onSelect: (id: string) => void;
   };
+  /** Opt-in: hides the tenant dropdown entirely (e.g. on pages listing all tenants, where "switch tenant" doesn't apply). */
+  hideTenantSwitcher?: boolean;
 }
 
-export default function Header({ title, subtitle, tenantSwitcher }: HeaderProps) {
+export default function Header({ title, subtitle, tenantSwitcher, hideTenantSwitcher = false }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { activeTenant, setActiveTenant, user } = useAuth();
@@ -71,6 +73,7 @@ export default function Header({ title, subtitle, tenantSwitcher }: HeaderProps)
         </button>
 
         {/* Tenant Selector Dropdown */}
+        {!hideTenantSwitcher && (
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -129,6 +132,7 @@ export default function Header({ title, subtitle, tenantSwitcher }: HeaderProps)
             </div>
           )}
         </div>
+        )}
 
         {/* User Avatar Circle */}
         <button

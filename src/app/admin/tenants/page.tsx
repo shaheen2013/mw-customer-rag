@@ -454,6 +454,7 @@ export default function TenantsPage() {
       <Header
         title="Tenants"
         subtitle="Create, monitor and manage client organizations."
+        hideTenantSwitcher
       />
 
       {/* Superadmin Security Ribbon */}
