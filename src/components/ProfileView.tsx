@@ -340,6 +340,8 @@ export default function ProfileView({ isAdminView = false }: ProfileViewProps) {
       <Header
         title={isAdminView ? "Super Admin Profile" : "Account Profile"}
         subtitle="Manage your personal identity, contact details, profile picture, and account credentials."
+        hideTenantSwitcher
+        hideDateFilter
       />
 
       {/* Top Profile Card Banner - Compact Executive Header */}

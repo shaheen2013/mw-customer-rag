@@ -101,6 +101,11 @@ export default function TenantsPage() {
   );
   const [addFormError, setAddFormError] = useState<string | null>(null);
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const [addFieldErrors, setAddFieldErrors] = useState<{
+    name?: string;
+    slug?: string;
+    admin_email?: string;
+  }>({});
 
   // Notifications
   const [notification, setNotification] = useState<{
@@ -151,7 +156,7 @@ export default function TenantsPage() {
       name,
       slug:
         prev.slug === "" ||
-        prev.slug ===
+          prev.slug ===
           prev.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
@@ -159,6 +164,7 @@ export default function TenantsPage() {
           ? slug
           : prev.slug,
     }));
+    setAddFieldErrors((prev) => ({ ...prev, name: undefined }));
   };
 
   const showNotification = useCallback(
@@ -409,13 +415,12 @@ export default function TenantsPage() {
     const limit =
       t.entitlements?.monthly_query_limit ??
       getQueryLimitForPlan(t.plan_tier?.toLowerCase() || "starter");
-    return `${used.toLocaleString()} / ${
-      limit >= 1000000
+    return `${used.toLocaleString()} / ${limit >= 1000000
         ? `${(limit / 1000000).toFixed(0)}M`
         : limit >= 1000
           ? `${(limit / 1000).toFixed(0)}K`
           : limit
-    }`;
+      }`;
   };
 
   const formatStorage = (t: TenantItem) => {
@@ -465,6 +470,7 @@ export default function TenantsPage() {
       <Header
         title="Tenants"
         subtitle="Create, monitor and manage client organizations."
+        hideTenantSwitcher
       />
 
       {/* Superadmin Security Ribbon */}
@@ -494,11 +500,10 @@ export default function TenantsPage() {
       {/* Toast Notification Banner */}
       {notification && (
         <div
-          className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${
-            notification.type === "success"
+          className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${notification.type === "success"
               ? "bg-emerald-950/60 border-emerald-500/30 text-emerald-300"
               : "bg-rose-950/60 border-rose-500/30 text-rose-300"
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2">
             {notification.type === "success" ? (
@@ -523,6 +528,7 @@ export default function TenantsPage() {
           <button
             onClick={() => {
               setAddFormError(null);
+              setAddFieldErrors({});
               setIsAddModalOpen(true);
             }}
             className="btn-primary flex items-center gap-2 text-xs cursor-pointer"
@@ -555,11 +561,10 @@ export default function TenantsPage() {
                         setSelectedPlan(p);
                         setIsPlanFilterOpen(false);
                       }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${
-                        selectedPlan === p
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${selectedPlan === p
                           ? "text-blue-400 font-semibold"
                           : "text-slate-300"
-                      }`}
+                        }`}
                     >
                       <span>
                         {p === "all" ? "All Plans" : formatPlanName(p)}
@@ -585,11 +590,10 @@ export default function TenantsPage() {
               <button
                 key={st.id}
                 onClick={() => setSelectedStatus(st.id)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${
-                  selectedStatus === st.id
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${selectedStatus === st.id
                     ? "bg-blue-600 text-white"
                     : "text-slate-400 hover:text-white"
-                }`}
+                  }`}
               >
                 {st.label}
               </button>
@@ -622,9 +626,8 @@ export default function TenantsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div
           onClick={() => setSelectedStatus("all")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${
-            selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
-          }`}
+          className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">
             Total Tenants
@@ -640,11 +643,10 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("active")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${
-            selectedStatus === "active"
+          className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${selectedStatus === "active"
               ? "border-emerald-500/60 bg-[#0e1933]"
               : ""
-          }`}
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Active</p>
           <p className="text-3xl font-bold text-white">
@@ -658,9 +660,8 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("trial")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${
-            selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
-          }`}
+          className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Trial</p>
           <p className="text-3xl font-bold text-amber-400">
@@ -674,11 +675,10 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("suspended")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${
-            selectedStatus === "suspended"
+          className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${selectedStatus === "suspended"
               ? "border-rose-500/60 bg-[#0e1933]"
               : ""
-          }`}
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Suspended</p>
           <p className="text-3xl font-bold text-rose-400">
@@ -812,11 +812,10 @@ export default function TenantsPage() {
                                 <button
                                   key={s}
                                   onClick={() => handleStatusChange(t, s)}
-                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${
-                                    statusNormalized === s
+                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${statusNormalized === s
                                       ? "text-blue-400 font-semibold"
                                       : "text-slate-300"
-                                  }`}
+                                    }`}
                                 >
                                   <span>
                                     {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -877,6 +876,7 @@ export default function TenantsPage() {
             <button
               onClick={() => {
                 setAddFormError(null);
+                setAddFieldErrors({});
                 setIsAddModalOpen(false);
               }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
@@ -911,7 +911,11 @@ export default function TenantsPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateTenant} className="space-y-4">
+            <form
+              onSubmit={handleCreateTenant}
+              noValidate
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
                   Organization / Tenant Name{" "}
@@ -919,27 +923,42 @@ export default function TenantsPage() {
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Cyberdyne Systems"
                   value={addForm.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className="input-dark w-full text-xs"
+                  className={`input-dark w-full text-xs ${addFieldErrors.name ? "!border-rose-500" : ""
+                    }`}
                 />
+                {addFieldErrors.name && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {addFieldErrors.name}
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
-                  Tenant Slug (URL Safe ID)
+                  Tenant Slug (URL Safe ID){" "}
+                  <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. cyberdyne-systems"
                   value={addForm.slug}
-                  onChange={(e) =>
-                    setAddForm((prev) => ({ ...prev, slug: e.target.value }))
-                  }
-                  className="input-dark w-full text-xs font-mono"
+                  onChange={(e) => {
+                    setAddForm((prev) => ({ ...prev, slug: e.target.value }));
+                    setAddFieldErrors((prev) => ({ ...prev, slug: undefined }));
+                  }}
+                  className={`input-dark w-full text-xs font-mono ${addFieldErrors.slug ? "!border-rose-500" : ""
+                    }`}
                 />
+                {addFieldErrors.slug && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {addFieldErrors.slug}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -999,14 +1018,25 @@ export default function TenantsPage() {
                   required
                   placeholder="admin@cyberdyne.com"
                   value={addForm.admin_email}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setAddForm((prev) => ({
                       ...prev,
                       admin_email: e.target.value,
-                    }))
-                  }
-                  className="input-dark w-full text-xs"
+                    }));
+                    setAddFieldErrors((prev) => ({
+                      ...prev,
+                      admin_email: undefined,
+                    }));
+                  }}
+                  className={`input-dark w-full text-xs ${addFieldErrors.admin_email ? "!border-rose-500" : ""
+                    }`}
                 />
+                {addFieldErrors.admin_email && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {addFieldErrors.admin_email}
+                  </p>
+                )}
                 <p className="text-[11px] text-slate-500 mt-1">
                   An initial tenant admin user is created and a temporary password
                   is sent. Must be unique across all workspaces.
@@ -1044,6 +1074,7 @@ export default function TenantsPage() {
                   type="button"
                   onClick={() => {
                     setAddFormError(null);
+                    setAddFieldErrors({});
                     setIsAddModalOpen(false);
                   }}
                   className="btn-secondary text-xs"

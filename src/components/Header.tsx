@@ -7,12 +7,39 @@ import { useAuth } from '@/context/AuthContext';
 import { resolveAvatarUrl } from '@/lib/api/auth';
 import { ChevronDown, Calendar } from 'lucide-react';
 
+interface TenantSwitcherOption {
+  id: string;
+  name: string;
+}
+
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  /**
+   * Opt-in: when provided, the tenant dropdown shows real tenants and
+   * `onSelect` is responsible for acting on the choice (e.g. navigating to
+   * that tenant's detail page). Pages that don't pass this keep the
+   * existing workspace-label dropdown unchanged.
+   */
+  tenantSwitcher?: {
+    options: TenantSwitcherOption[];
+    activeId: string;
+    activeLabel: string;
+    onSelect: (id: string) => void;
+  };
+  /** Opt-in: hides the tenant dropdown entirely (e.g. on pages listing all tenants, where "switch tenant" doesn't apply). */
+  hideTenantSwitcher?: boolean;
+  /** Opt-in: hides the "Last 30 days" date filter pill (e.g. on pages with no date-ranged data, like Profile). */
+  hideDateFilter?: boolean;
 }
 
-export default function Header({ title, subtitle }: HeaderProps) {
+export default function Header({
+  title,
+  subtitle,
+  tenantSwitcher,
+  hideTenantSwitcher = false,
+  hideDateFilter = false,
+}: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { activeTenant, setActiveTenant, user } = useAuth();
@@ -48,44 +75,74 @@ export default function Header({ title, subtitle }: HeaderProps) {
 
       <div className="flex items-center gap-3 self-start md:self-auto">
         {/* Date Filter Pill */}
-        <button className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>Last 30 days</span>
-        </button>
+        {!hideDateFilter && (
+          <button className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span>Last 30 days</span>
+          </button>
+        )}
 
         {/* Tenant Selector Dropdown */}
+        {!hideTenantSwitcher && (
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-semibold text-slate-200 hover:text-white hover:border-blue-500 transition"
           >
-            <span>{activeTenant}</span>
+            <span>{tenantSwitcher ? tenantSwitcher.activeLabel : activeTenant}</span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-[#0d1527] border border-[#1b2a47] rounded-md shadow-xl z-50 py-1">
+            <div className="absolute right-0 mt-2 w-56 max-h-80 overflow-y-auto bg-[#0d1527] border border-[#1b2a47] rounded-md shadow-xl z-50 py-1">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase border-b border-[#1b2a47]">
                 Switch Tenant
               </div>
-              {tenantsList.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    setActiveTenant(t);
-                    setDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-xs transition flex items-center justify-between ${
-                    activeTenant === t ? 'bg-[#121f38] text-blue-400 font-semibold' : 'text-slate-300 hover:bg-[#121e36]'
-                  }`}
-                >
-                  <span>{t}</span>
-                  {activeTenant === t && <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>}
-                </button>
-              ))}
+              {tenantSwitcher ? (
+                tenantSwitcher.options.length > 0 ? (
+                  tenantSwitcher.options.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        tenantSwitcher.onSelect(t.id);
+                        setDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs transition flex items-center justify-between ${
+                        tenantSwitcher.activeId === t.id
+                          ? 'bg-[#121f38] text-blue-400 font-semibold'
+                          : 'text-slate-300 hover:bg-[#121e36]'
+                      }`}
+                    >
+                      <span className="truncate">{t.name}</span>
+                      {tenantSwitcher.activeId === t.id && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-xs text-slate-500">Loading tenants…</div>
+                )
+              ) : (
+                tenantsList.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      setActiveTenant(t);
+                      setDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs transition flex items-center justify-between ${
+                      activeTenant === t ? 'bg-[#121f38] text-blue-400 font-semibold' : 'text-slate-300 hover:bg-[#121e36]'
+                    }`}
+                  >
+                    <span>{t}</span>
+                    {activeTenant === t && <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>}
+                  </button>
+                ))
+              )}
             </div>
           )}
         </div>
+        )}
 
         {/* User Avatar Circle */}
         <button
