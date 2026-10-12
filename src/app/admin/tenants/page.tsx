@@ -177,7 +177,7 @@ export default function TenantsPage() {
       name,
       slug:
         prev.slug === "" ||
-        prev.slug ===
+          prev.slug ===
           prev.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
@@ -285,37 +285,34 @@ export default function TenantsPage() {
   // Handle Create Tenant
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedName = addForm.name.trim();
+    const trimmedEmail = addForm.admin_email.trim();
 
-    const fieldErrors: { name?: string; slug?: string; admin_email?: string } =
-      {};
-    if (!addForm.name.trim()) {
-      fieldErrors.name = "Organization name is required.";
+    if (!trimmedName) {
+      setAddFormError("Organization / Tenant Name is required.");
+      return;
     }
-    const slug = addForm.slug.trim();
-    if (!slug) {
-      fieldErrors.slug = "Tenant slug is required.";
-    } else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
-      fieldErrors.slug =
-        "Use lowercase letters, numbers, and hyphens only (e.g. cyberdyne-systems).";
+
+    if (!trimmedEmail) {
+      setAddFormError("Initial Tenant Admin Email is required.");
+      return;
     }
-    const email = addForm.admin_email.trim();
-    if (!email) {
-      fieldErrors.admin_email = "Admin email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      fieldErrors.admin_email = "Enter a valid email address.";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setAddFormError("Please enter a valid email address.");
+      return;
     }
-    setAddFieldErrors(fieldErrors);
-    if (Object.keys(fieldErrors).length > 0) return;
 
     setActionLoading(true);
     setAddFormError(null);
     try {
       const payload: CreateTenantPayload = {
-        name: addForm.name.trim(),
-        slug: addForm.slug.trim(),
+        name: trimmedName,
+        slug: addForm.slug.trim() || undefined,
         plan_tier: addForm.plan_tier,
         status: addForm.status,
-        admin_email: addForm.admin_email.trim(),
+        admin_email: trimmedEmail,
         entitlements: {
           monthly_query_limit: Number(addForm.monthly_query_limit),
         },
@@ -324,9 +321,7 @@ export default function TenantsPage() {
       const created = await tenantsApi.createTenant(payload);
       showNotification(
         "success",
-        `Tenant "${created.name}" created successfully${
-          addForm.admin_email ? ` with admin ${addForm.admin_email}` : ""
-        }!`,
+        `Tenant "${created.name}" created successfully with admin ${trimmedEmail}!`,
       );
       setIsAddModalOpen(false);
       setAddForm({
@@ -343,10 +338,6 @@ export default function TenantsPage() {
       const msg =
         err instanceof Error ? err.message : "Failed to create tenant";
       setAddFormError(msg);
-      // Refresh the list in the background so you can see whether the tenant
-      // was actually created despite the error (the backend is not atomic —
-      // see the warning below the form). This does NOT auto-close the modal
-      // or let you resubmit silently; you decide what to do next.
       fetchTenants();
       fetchStats();
     } finally {
@@ -456,13 +447,12 @@ export default function TenantsPage() {
     const limit =
       t.entitlements?.monthly_query_limit ??
       getQueryLimitForPlan(t.plan_tier?.toLowerCase() || "starter");
-    return `${used.toLocaleString()} / ${
-      limit >= 1000000
+    return `${used.toLocaleString()} / ${limit >= 1000000
         ? `${(limit / 1000000).toFixed(0)}M`
         : limit >= 1000
           ? `${(limit / 1000).toFixed(0)}K`
           : limit
-    }`;
+      }`;
   };
 
   const formatStorage = (t: TenantItem) => {
@@ -550,11 +540,10 @@ export default function TenantsPage() {
       {/* Toast Notification Banner */}
       {notification && (
         <div
-          className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${
-            notification.type === "success"
+          className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${notification.type === "success"
               ? "bg-emerald-950/60 border-emerald-500/30 text-emerald-300"
               : "bg-rose-950/60 border-rose-500/30 text-rose-300"
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2">
             {notification.type === "success" ? (
@@ -612,11 +601,10 @@ export default function TenantsPage() {
                         setSelectedPlan(p);
                         setIsPlanFilterOpen(false);
                       }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${
-                        selectedPlan === p
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${selectedPlan === p
                           ? "text-blue-400 font-semibold"
                           : "text-slate-300"
-                      }`}
+                        }`}
                     >
                       <span>
                         {p === "all" ? "All Plans" : formatPlanName(p)}
@@ -642,11 +630,10 @@ export default function TenantsPage() {
               <button
                 key={st.id}
                 onClick={() => setSelectedStatus(st.id)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${
-                  selectedStatus === st.id
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${selectedStatus === st.id
                     ? "bg-blue-600 text-white"
                     : "text-slate-400 hover:text-white"
-                }`}
+                  }`}
               >
                 {st.label}
               </button>
@@ -679,9 +666,8 @@ export default function TenantsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div
           onClick={() => setSelectedStatus("all")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${
-            selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
-          }`}
+          className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">
             Total Tenants
@@ -697,11 +683,10 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("active")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${
-            selectedStatus === "active"
+          className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${selectedStatus === "active"
               ? "border-emerald-500/60 bg-[#0e1933]"
               : ""
-          }`}
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Active</p>
           <p className="text-3xl font-bold text-white">
@@ -715,9 +700,8 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("trial")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${
-            selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
-          }`}
+          className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Trial</p>
           <p className="text-3xl font-bold text-amber-400">
@@ -731,11 +715,10 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("suspended")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${
-            selectedStatus === "suspended"
+          className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${selectedStatus === "suspended"
               ? "border-rose-500/60 bg-[#0e1933]"
               : ""
-          }`}
+            }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Suspended</p>
           <p className="text-3xl font-bold text-rose-400">
@@ -869,11 +852,10 @@ export default function TenantsPage() {
                                 <button
                                   key={s}
                                   onClick={() => handleStatusChange(t, s)}
-                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${
-                                    statusNormalized === s
+                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${statusNormalized === s
                                       ? "text-blue-400 font-semibold"
                                       : "text-slate-300"
-                                  }`}
+                                    }`}
                                 >
                                   <span>
                                     {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -955,11 +937,6 @@ export default function TenantsPage() {
                 <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                 <div>
                   <span>{getFriendlyErrorMessage(addFormError)}</span>
-                  <p className="mt-1 text-rose-400/80">
-                    A tenant may already have been created despite this error —
-                    close this dialog and check the tenant list before
-                    resubmitting, to avoid creating a duplicate.
-                  </p>
                   {isTechnicalErrorMessage(addFormError) && (
                     <details className="mt-1.5">
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
@@ -989,9 +966,8 @@ export default function TenantsPage() {
                   placeholder="e.g. Cyberdyne Systems"
                   value={addForm.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`input-dark w-full text-xs ${
-                    addFieldErrors.name ? "!border-rose-500" : ""
-                  }`}
+                  className={`input-dark w-full text-xs ${addFieldErrors.name ? "!border-rose-500" : ""
+                    }`}
                 />
                 {addFieldErrors.name && (
                   <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
@@ -1014,9 +990,8 @@ export default function TenantsPage() {
                     setAddForm((prev) => ({ ...prev, slug: e.target.value }));
                     setAddFieldErrors((prev) => ({ ...prev, slug: undefined }));
                   }}
-                  className={`input-dark w-full text-xs font-mono ${
-                    addFieldErrors.slug ? "!border-rose-500" : ""
-                  }`}
+                  className={`input-dark w-full text-xs font-mono ${addFieldErrors.slug ? "!border-rose-500" : ""
+                    }`}
                 />
                 {addFieldErrors.slug && (
                   <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
@@ -1075,10 +1050,12 @@ export default function TenantsPage() {
 
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
-                  Initial Tenant Admin Email <span className="text-rose-400">*</span>
+                  Initial Tenant Admin Email{" "}
+                  <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="email"
+                  required
                   placeholder="admin@cyberdyne.com"
                   value={addForm.admin_email}
                   onChange={(e) => {
@@ -1091,9 +1068,8 @@ export default function TenantsPage() {
                       admin_email: undefined,
                     }));
                   }}
-                  className={`input-dark w-full text-xs ${
-                    addFieldErrors.admin_email ? "!border-rose-500" : ""
-                  }`}
+                  className={`input-dark w-full text-xs ${addFieldErrors.admin_email ? "!border-rose-500" : ""
+                    }`}
                 />
                 {addFieldErrors.admin_email && (
                   <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
@@ -1102,8 +1078,8 @@ export default function TenantsPage() {
                   </p>
                 )}
                 <p className="text-[11px] text-slate-500 mt-1">
-                  An admin user is created for this address and a temporary
-                  password is sent.
+                  An initial tenant admin user is created and a temporary password
+                  is sent. Must be unique across all workspaces.
                 </p>
               </div>
 
