@@ -31,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 const PLAN_OPTIONS = [
   {
@@ -62,6 +62,13 @@ const PLAN_OPTIONS = [
 
 const DEFAULT_PLAN_TIER = "growth";
 
+const DATE_RANGE_OPTIONS = [
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+  { value: "all", label: "All time" },
+];
+
 // Looks up a plan's query entitlement from PLAN_OPTIONS instead of hardcoding it,
 // so defaults stay correct if plan limits ever change.
 const getQueryLimitForPlan = (planTier: string) =>
@@ -90,6 +97,20 @@ export default function TenantsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPlan, setSelectedPlan] = useState<string>("all");
   const [isPlanFilterOpen, setIsPlanFilterOpen] = useState(false);
+  // Defaults to "all" (no filter) so no Date.now() call is needed before the
+  // user interacts — render must stay pure, so the cutoff timestamp is only
+  // ever computed inside the onSelect handler below, never during render.
+  const [dateRangeDays, setDateRangeDays] = useState<string>("all");
+  const [dateRangeCutoff, setDateRangeCutoff] = useState<number | null>(null);
+
+  const handleDateRangeSelect = (value: string) => {
+    setDateRangeDays(value);
+    setDateRangeCutoff(
+      value === "all"
+        ? null
+        : Date.now() - Number(value) * 24 * 60 * 60 * 1000,
+    );
+  };
 
   // Modals & Dialogs
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -242,13 +263,24 @@ export default function TenantsPage() {
     return () => clearTimeout(timer);
   }, [fetchTenants]);
 
-  // Client-side plan filtering
-  const filteredTenants = useMemo(() => {
-    if (selectedPlan === "all") return tenants;
-    return tenants.filter(
+  // Client-side plan + date-range filtering (cheap enough to recompute every
+  // render; dateRangeCutoff is pre-computed in the effect above since render
+  // itself must stay pure — no Date.now() here).
+  let filteredTenants = tenants;
+
+  if (selectedPlan !== "all") {
+    filteredTenants = filteredTenants.filter(
       (t) => t.plan_tier?.toLowerCase() === selectedPlan.toLowerCase(),
     );
-  }, [tenants, selectedPlan]);
+  }
+
+  if (dateRangeCutoff !== null) {
+    filteredTenants = filteredTenants.filter((t) => {
+      if (!t.created_at) return false;
+      const createdAt = new Date(t.created_at).getTime();
+      return !Number.isNaN(createdAt) && createdAt >= dateRangeCutoff;
+    });
+  }
 
   // Handle Create Tenant
   const handleCreateTenant = async (e: React.FormEvent) => {
@@ -481,6 +513,14 @@ export default function TenantsPage() {
         title="Tenants"
         subtitle="Create, monitor and manage client organizations."
         hideTenantSwitcher
+        dateFilter={{
+          options: DATE_RANGE_OPTIONS,
+          activeValue: dateRangeDays,
+          activeLabel:
+            DATE_RANGE_OPTIONS.find((o) => o.value === dateRangeDays)
+              ?.label || "All time",
+          onSelect: handleDateRangeSelect,
+        }}
       />
 
       {/* Superadmin Security Ribbon */}

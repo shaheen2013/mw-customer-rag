@@ -31,6 +31,18 @@ interface HeaderProps {
   hideTenantSwitcher?: boolean;
   /** Opt-in: hides the "Last 30 days" date filter pill (e.g. on pages with no date-ranged data, like Profile). */
   hideDateFilter?: boolean;
+  /**
+   * Opt-in: when provided, the date pill becomes a real dropdown over these
+   * options and `onSelect` is responsible for acting on the choice (e.g.
+   * filtering an already-fetched list client-side). Pages that don't pass
+   * this keep the static "Last 30 days" label unchanged.
+   */
+  dateFilter?: {
+    options: { value: string; label: string }[];
+    activeValue: string;
+    activeLabel: string;
+    onSelect: (value: string) => void;
+  };
 }
 
 export default function Header({
@@ -39,11 +51,13 @@ export default function Header({
   tenantSwitcher,
   hideTenantSwitcher = false,
   hideDateFilter = false,
+  dateFilter,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { activeTenant, setActiveTenant, user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [dateDropdownOpen, setDateDropdownOpen] = React.useState(false);
   const [failedAvatarSrc, setFailedAvatarSrc] = React.useState<string | null>(null);
 
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'platform_admin' || pathname?.startsWith('/admin');
@@ -76,10 +90,42 @@ export default function Header({
       <div className="flex items-center gap-3 self-start md:self-auto">
         {/* Date Filter Pill */}
         {!hideDateFilter && (
-          <button className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>Last 30 days</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() =>
+                dateFilter ? setDateDropdownOpen(!dateDropdownOpen) : undefined
+              }
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-[#121e36] border border-[#1b2a47] rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition"
+            >
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>{dateFilter ? dateFilter.activeLabel : 'Last 30 days'}</span>
+              {dateFilter && <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+            </button>
+
+            {dateFilter && dateDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-44 bg-[#0d1527] border border-[#1b2a47] rounded-md shadow-xl z-50 py-1">
+                {dateFilter.options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      dateFilter.onSelect(opt.value);
+                      setDateDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs transition flex items-center justify-between ${
+                      dateFilter.activeValue === opt.value
+                        ? 'bg-[#121f38] text-blue-400 font-semibold'
+                        : 'text-slate-300 hover:bg-[#121e36]'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {dateFilter.activeValue === opt.value && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Tenant Selector Dropdown */}
