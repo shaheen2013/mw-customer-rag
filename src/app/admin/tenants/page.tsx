@@ -101,6 +101,11 @@ export default function TenantsPage() {
   );
   const [addFormError, setAddFormError] = useState<string | null>(null);
   const [editFormError, setEditFormError] = useState<string | null>(null);
+  const [addFieldErrors, setAddFieldErrors] = useState<{
+    name?: string;
+    slug?: string;
+    admin_email?: string;
+  }>({});
 
   // Notifications
   const [notification, setNotification] = useState<{
@@ -159,6 +164,7 @@ export default function TenantsPage() {
           ? slug
           : prev.slug,
     }));
+    setAddFieldErrors((prev) => ({ ...prev, name: undefined }));
   };
 
   const showNotification = useCallback(
@@ -247,17 +253,37 @@ export default function TenantsPage() {
   // Handle Create Tenant
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addForm.name.trim()) return;
+
+    const fieldErrors: { name?: string; slug?: string; admin_email?: string } =
+      {};
+    if (!addForm.name.trim()) {
+      fieldErrors.name = "Organization name is required.";
+    }
+    const slug = addForm.slug.trim();
+    if (!slug) {
+      fieldErrors.slug = "Tenant slug is required.";
+    } else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+      fieldErrors.slug =
+        "Use lowercase letters, numbers, and hyphens only (e.g. cyberdyne-systems).";
+    }
+    const email = addForm.admin_email.trim();
+    if (!email) {
+      fieldErrors.admin_email = "Admin email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      fieldErrors.admin_email = "Enter a valid email address.";
+    }
+    setAddFieldErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) return;
 
     setActionLoading(true);
     setAddFormError(null);
     try {
       const payload: CreateTenantPayload = {
         name: addForm.name.trim(),
-        slug: addForm.slug.trim() || undefined,
+        slug: addForm.slug.trim(),
         plan_tier: addForm.plan_tier,
         status: addForm.status,
-        admin_email: addForm.admin_email.trim() || undefined,
+        admin_email: addForm.admin_email.trim(),
         entitlements: {
           monthly_query_limit: Number(addForm.monthly_query_limit),
         },
@@ -513,6 +539,7 @@ export default function TenantsPage() {
           <button
             onClick={() => {
               setAddFormError(null);
+              setAddFieldErrors({});
               setIsAddModalOpen(true);
             }}
             className="btn-primary flex items-center gap-2 text-xs cursor-pointer"
@@ -867,6 +894,7 @@ export default function TenantsPage() {
             <button
               onClick={() => {
                 setAddFormError(null);
+                setAddFieldErrors({});
                 setIsAddModalOpen(false);
               }}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
@@ -906,7 +934,11 @@ export default function TenantsPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateTenant} className="space-y-4">
+            <form
+              onSubmit={handleCreateTenant}
+              noValidate
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
                   Organization / Tenant Name{" "}
@@ -914,27 +946,44 @@ export default function TenantsPage() {
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Cyberdyne Systems"
                   value={addForm.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className="input-dark w-full text-xs"
+                  className={`input-dark w-full text-xs ${
+                    addFieldErrors.name ? "!border-rose-500" : ""
+                  }`}
                 />
+                {addFieldErrors.name && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {addFieldErrors.name}
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
-                  Tenant Slug (URL Safe ID)
+                  Tenant Slug (URL Safe ID){" "}
+                  <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. cyberdyne-systems"
                   value={addForm.slug}
-                  onChange={(e) =>
-                    setAddForm((prev) => ({ ...prev, slug: e.target.value }))
-                  }
-                  className="input-dark w-full text-xs font-mono"
+                  onChange={(e) => {
+                    setAddForm((prev) => ({ ...prev, slug: e.target.value }));
+                    setAddFieldErrors((prev) => ({ ...prev, slug: undefined }));
+                  }}
+                  className={`input-dark w-full text-xs font-mono ${
+                    addFieldErrors.slug ? "!border-rose-500" : ""
+                  }`}
                 />
+                {addFieldErrors.slug && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {addFieldErrors.slug}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -986,23 +1035,35 @@ export default function TenantsPage() {
 
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
-                  Initial Tenant Admin Email (Optional)
+                  Initial Tenant Admin Email <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="email"
                   placeholder="admin@cyberdyne.com"
                   value={addForm.admin_email}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setAddForm((prev) => ({
                       ...prev,
                       admin_email: e.target.value,
-                    }))
-                  }
-                  className="input-dark w-full text-xs"
+                    }));
+                    setAddFieldErrors((prev) => ({
+                      ...prev,
+                      admin_email: undefined,
+                    }));
+                  }}
+                  className={`input-dark w-full text-xs ${
+                    addFieldErrors.admin_email ? "!border-rose-500" : ""
+                  }`}
                 />
+                {addFieldErrors.admin_email && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {addFieldErrors.admin_email}
+                  </p>
+                )}
                 <p className="text-[11px] text-slate-500 mt-1">
-                  If provided, an admin user is created and a temporary password
-                  is sent.
+                  An admin user is created for this address and a temporary
+                  password is sent.
                 </p>
               </div>
 
@@ -1037,6 +1098,7 @@ export default function TenantsPage() {
                   type="button"
                   onClick={() => {
                     setAddFormError(null);
+                    setAddFieldErrors({});
                     setIsAddModalOpen(false);
                   }}
                   className="btn-secondary text-xs"
