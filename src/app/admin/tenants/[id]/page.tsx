@@ -22,6 +22,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import {
   tenantsApi,
   TenantDetailResponse,
+  TenantItem,
   UpdateTenantPayload,
 } from '@/lib/api/tenants';
 
@@ -43,6 +44,7 @@ export default function TenantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [allTenants, setAllTenants] = useState<TenantItem[]>([]);
 
   // Modals
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -99,6 +101,16 @@ export default function TenantDetailPage() {
         setLoading(false);
       });
   }, [tenantId]);
+
+  // Full tenant list for the header's "Switch Tenant" dropdown.
+  useEffect(() => {
+    tenantsApi
+      .getTenants({ limit: 100 })
+      .then((res) => setAllTenants(res.data || []))
+      .catch(() => {
+        // Non-critical: the switcher just stays empty if this fails.
+      });
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,6 +224,12 @@ export default function TenantDetailPage() {
       <Header
         title={`Tenant Detail - ${tenant.name}`}
         subtitle={`Organization identifier: ${tenant.slug} • Managed under Super Admin Governance.`}
+        tenantSwitcher={{
+          options: allTenants.map((t) => ({ id: t.id, name: t.name })),
+          activeId: tenant.id,
+          activeLabel: tenant.name,
+          onSelect: (id) => router.push(`/admin/tenants/${id}`),
+        }}
       />
 
       {/* Plan Status Badges & Quick Status Change */}
