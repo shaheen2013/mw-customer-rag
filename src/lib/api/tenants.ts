@@ -91,6 +91,7 @@ export const tenantsApi = {
   getTenants: async (params?: {
     status?: string;
     search?: string;
+    date_range?: string;
     limit?: number;
     offset?: number;
   }): Promise<TenantListResponse> => {

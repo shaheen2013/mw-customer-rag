@@ -7,6 +7,7 @@ import {
   getFriendlyErrorMessage,
   isTechnicalErrorMessage,
 } from "@/lib/api-client";
+import { PlanItem, plansApi } from "@/lib/api/plans";
 import {
   CreateTenantPayload,
   TenantItem,
@@ -14,7 +15,6 @@ import {
   TenantStats,
   UpdateTenantPayload,
 } from "@/lib/api/tenants";
-import { plansApi, PlanItem } from "@/lib/api/plans";
 import {
   AlertCircle,
   Building2,
@@ -98,19 +98,12 @@ export default function TenantsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPlan, setSelectedPlan] = useState<string>("all");
   const [isPlanFilterOpen, setIsPlanFilterOpen] = useState(false);
-  // Defaults to "all" (no filter) so no Date.now() call is needed before the
-  // user interacts — render must stay pure, so the cutoff timestamp is only
-  // ever computed inside the onSelect handler below, never during render.
+  // "all" | "7" | "30" | "90" — sent to the backend as date_range, which
+  // filters tenants by created_at server-side (see fetchTenants below).
   const [dateRangeDays, setDateRangeDays] = useState<string>("all");
-  const [dateRangeCutoff, setDateRangeCutoff] = useState<number | null>(null);
 
   const handleDateRangeSelect = (value: string) => {
     setDateRangeDays(value);
-    setDateRangeCutoff(
-      value === "all"
-        ? null
-        : Date.now() - Number(value) * 24 * 60 * 60 * 1000,
-    );
   };
 
   // Modals & Dialogs
@@ -179,7 +172,7 @@ export default function TenantsPage() {
       name,
       slug:
         prev.slug === "" ||
-          prev.slug ===
+        prev.slug ===
           prev.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
@@ -219,7 +212,12 @@ export default function TenantsPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: { status?: string; search?: string; limit?: number } = {
+      const params: {
+        status?: string;
+        search?: string;
+        date_range?: string;
+        limit?: number;
+      } = {
         limit: 100,
       };
       if (selectedStatus !== "all") {
@@ -227,6 +225,9 @@ export default function TenantsPage() {
       }
       if (search.trim()) {
         params.search = search.trim();
+      }
+      if (dateRangeDays !== "all") {
+        params.date_range = dateRangeDays;
       }
 
       const res = await tenantsApi.getTenants(params);
@@ -238,7 +239,7 @@ export default function TenantsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedStatus, search]);
+  }, [selectedStatus, search, dateRangeDays]);
 
   useEffect(() => {
     let isMounted = true;
@@ -276,23 +277,14 @@ export default function TenantsPage() {
       .catch(() => setPlanPreview(null));
   }, [isAddModalOpen, addForm.plan_tier]);
 
-  // Client-side plan + date-range filtering (cheap enough to recompute every
-  // render; dateRangeCutoff is pre-computed in the effect above since render
-  // itself must stay pure — no Date.now() here).
+  // Client-side plan filtering only; date-range filtering is done server-side
+  // via fetchTenants' date_range param (see above).
   let filteredTenants = tenants;
 
   if (selectedPlan !== "all") {
     filteredTenants = filteredTenants.filter(
       (t) => t.plan_tier?.toLowerCase() === selectedPlan.toLowerCase(),
     );
-  }
-
-  if (dateRangeCutoff !== null) {
-    filteredTenants = filteredTenants.filter((t) => {
-      if (!t.created_at) return false;
-      const createdAt = new Date(t.created_at).getTime();
-      return !Number.isNaN(createdAt) && createdAt >= dateRangeCutoff;
-    });
   }
 
   // Handle Create Tenant
@@ -460,12 +452,13 @@ export default function TenantsPage() {
     const limit =
       t.entitlements?.monthly_query_limit ??
       getQueryLimitForPlan(t.plan_tier?.toLowerCase() || "starter");
-    return `${used.toLocaleString()} / ${limit >= 1000000
+    return `${used.toLocaleString()} / ${
+      limit >= 1000000
         ? `${(limit / 1000000).toFixed(0)}M`
         : limit >= 1000
           ? `${(limit / 1000).toFixed(0)}K`
           : limit
-      }`;
+    }`;
   };
 
   const formatStorage = (t: TenantItem) => {
@@ -520,8 +513,8 @@ export default function TenantsPage() {
           options: DATE_RANGE_OPTIONS,
           activeValue: dateRangeDays,
           activeLabel:
-            DATE_RANGE_OPTIONS.find((o) => o.value === dateRangeDays)
-              ?.label || "All time",
+            DATE_RANGE_OPTIONS.find((o) => o.value === dateRangeDays)?.label ||
+            "All time",
           onSelect: handleDateRangeSelect,
         }}
       />
@@ -553,10 +546,11 @@ export default function TenantsPage() {
       {/* Toast Notification Banner */}
       {notification && (
         <div
-          className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${notification.type === "success"
+          className={`flex items-center justify-between p-3.5 rounded-lg mb-6 text-xs font-medium border ${
+            notification.type === "success"
               ? "bg-emerald-950/60 border-emerald-500/30 text-emerald-300"
               : "bg-rose-950/60 border-rose-500/30 text-rose-300"
-            }`}
+          }`}
         >
           <div className="flex items-center gap-2">
             {notification.type === "success" ? (
@@ -614,10 +608,11 @@ export default function TenantsPage() {
                         setSelectedPlan(p);
                         setIsPlanFilterOpen(false);
                       }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${selectedPlan === p
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#131f38] transition ${
+                        selectedPlan === p
                           ? "text-blue-400 font-semibold"
                           : "text-slate-300"
-                        }`}
+                      }`}
                     >
                       <span>
                         {p === "all" ? "All Plans" : formatPlanName(p)}
@@ -643,10 +638,11 @@ export default function TenantsPage() {
               <button
                 key={st.id}
                 onClick={() => setSelectedStatus(st.id)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${selectedStatus === st.id
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition cursor-pointer ${
+                  selectedStatus === st.id
                     ? "bg-blue-600 text-white"
                     : "text-slate-400 hover:text-white"
-                  }`}
+                }`}
               >
                 {st.label}
               </button>
@@ -662,7 +658,7 @@ export default function TenantsPage() {
             placeholder="Search tenant name or slug..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-dark w-full !pl-9 pr-8 text-xs"
+            className="input-dark w-full pl-9! pr-8 text-xs"
           />
           {search && (
             <button
@@ -679,8 +675,9 @@ export default function TenantsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div
           onClick={() => setSelectedStatus("all")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
-            }`}
+          className={`card-panel p-5 cursor-pointer transition border hover:border-blue-500/50 ${
+            selectedStatus === "all" ? "border-blue-500/60 bg-[#0e1933]" : ""
+          }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">
             Total Tenants
@@ -696,10 +693,11 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("active")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${selectedStatus === "active"
+          className={`card-panel p-5 cursor-pointer transition border hover:border-emerald-500/50 ${
+            selectedStatus === "active"
               ? "border-emerald-500/60 bg-[#0e1933]"
               : ""
-            }`}
+          }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Active</p>
           <p className="text-3xl font-bold text-white">
@@ -713,8 +711,9 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("trial")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
-            }`}
+          className={`card-panel p-5 cursor-pointer transition border hover:border-amber-500/50 ${
+            selectedStatus === "trial" ? "border-amber-500/60 bg-[#0e1933]" : ""
+          }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Trial</p>
           <p className="text-3xl font-bold text-amber-400">
@@ -728,10 +727,11 @@ export default function TenantsPage() {
 
         <div
           onClick={() => setSelectedStatus("suspended")}
-          className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${selectedStatus === "suspended"
+          className={`card-panel p-5 cursor-pointer transition border hover:border-rose-500/50 ${
+            selectedStatus === "suspended"
               ? "border-rose-500/60 bg-[#0e1933]"
               : ""
-            }`}
+          }`}
         >
           <p className="text-xs font-medium text-slate-400 mb-1">Suspended</p>
           <p className="text-3xl font-bold text-rose-400">
@@ -865,10 +865,11 @@ export default function TenantsPage() {
                                 <button
                                   key={s}
                                   onClick={() => handleStatusChange(t, s)}
-                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${statusNormalized === s
+                                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-[#131f38] transition flex items-center justify-between ${
+                                    statusNormalized === s
                                       ? "text-blue-400 font-semibold"
                                       : "text-slate-300"
-                                    }`}
+                                  }`}
                                 >
                                   <span>
                                     {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -955,7 +956,7 @@ export default function TenantsPage() {
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
                         Show technical details
                       </summary>
-                      <p className="mt-1 text-rose-400/70 break-words">
+                      <p className="mt-1 text-rose-400/70 wrap-break-word">
                         {addFormError}
                       </p>
                     </details>
@@ -979,8 +980,9 @@ export default function TenantsPage() {
                   placeholder="e.g. Cyberdyne Systems"
                   value={addForm.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`input-dark w-full text-xs ${addFieldErrors.name ? "!border-rose-500" : ""
-                    }`}
+                  className={`input-dark w-full text-xs ${
+                    addFieldErrors.name ? "border-rose-500!" : ""
+                  }`}
                 />
                 {addFieldErrors.name && (
                   <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
@@ -1003,8 +1005,9 @@ export default function TenantsPage() {
                     setAddForm((prev) => ({ ...prev, slug: e.target.value }));
                     setAddFieldErrors((prev) => ({ ...prev, slug: undefined }));
                   }}
-                  className={`input-dark w-full text-xs font-mono ${addFieldErrors.slug ? "!border-rose-500" : ""
-                    }`}
+                  className={`input-dark w-full text-xs font-mono ${
+                    addFieldErrors.slug ? "border-rose-500!" : ""
+                  }`}
                 />
                 {addFieldErrors.slug && (
                   <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
@@ -1093,8 +1096,9 @@ export default function TenantsPage() {
                       admin_email: undefined,
                     }));
                   }}
-                  className={`input-dark w-full text-xs ${addFieldErrors.admin_email ? "!border-rose-500" : ""
-                    }`}
+                  className={`input-dark w-full text-xs ${
+                    addFieldErrors.admin_email ? "border-rose-500!" : ""
+                  }`}
                 />
                 {addFieldErrors.admin_email && (
                   <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
@@ -1103,8 +1107,8 @@ export default function TenantsPage() {
                   </p>
                 )}
                 <p className="text-[11px] text-slate-500 mt-1">
-                  An initial tenant admin user is created and a temporary password
-                  is sent. Must be unique across all workspaces.
+                  An initial tenant admin user is created and a temporary
+                  password is sent. Must be unique across all workspaces.
                 </p>
               </div>
 
@@ -1194,7 +1198,7 @@ export default function TenantsPage() {
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
                         Show technical details
                       </summary>
-                      <p className="mt-1 text-rose-400/70 break-words">
+                      <p className="mt-1 text-rose-400/70 wrap-break-word">
                         {editFormError}
                       </p>
                     </details>
