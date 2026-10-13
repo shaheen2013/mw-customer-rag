@@ -171,6 +171,7 @@ export default function PlansBillingPage() {
         title="Plans & Usage"
         subtitle="Configure commercial plans, limits and entitlements."
         hideTenantSwitcher
+        hideDateFilter
       />
 
       {notification && (
