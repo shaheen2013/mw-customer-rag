@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Header from "@/components/Header";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import Header from "@/components/Header";
 import {
-  plansApi,
-  PlanItem,
+  getFriendlyErrorMessage,
+  isTechnicalErrorMessage,
+} from "@/lib/api-client";
+import {
   PlanEntitlementUpdatePayload,
+  PlanItem,
+  plansApi,
 } from "@/lib/api/plans";
-import { getFriendlyErrorMessage, isTechnicalErrorMessage } from "@/lib/api-client";
 import {
   AlertCircle,
   Check,
@@ -17,6 +19,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 const GB = 1073741824;
 
@@ -39,9 +42,7 @@ export default function PlansBillingPage() {
     message: string;
   } | null>(null);
 
-  const [configureTarget, setConfigureTarget] = useState<PlanItem | null>(
-    null,
-  );
+  const [configureTarget, setConfigureTarget] = useState<PlanItem | null>(null);
   const [editValues, setEditValues] = useState<EditValues>({
     monthly_query_limit: 0,
     max_pages: 0,
@@ -72,9 +73,7 @@ export default function PlansBillingPage() {
       const res = await plansApi.getPlans();
       setPlans(res.data || []);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load plans",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load plans");
     } finally {
       setLoading(false);
     }
@@ -250,9 +249,7 @@ export default function PlansBillingPage() {
                       {plan.tenant_count === 1 ? "" : "s"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mb-4">
-                    {plan.tagline}
-                  </p>
+                  <p className="text-xs text-slate-400 mb-4">{plan.tagline}</p>
 
                   <div className="text-3xl font-extrabold text-blue-500 mb-4 tracking-tight">
                     {plan.price_label}
@@ -357,7 +354,7 @@ export default function PlansBillingPage() {
                       <summary className="cursor-pointer text-rose-400/70 hover:text-rose-300">
                         Show technical details
                       </summary>
-                      <p className="mt-1 text-rose-400/70 break-words">
+                      <p className="mt-1 text-rose-400/70 wrap-break">
                         {modalError}
                       </p>
                     </details>
