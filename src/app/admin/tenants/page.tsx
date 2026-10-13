@@ -14,6 +14,7 @@ import {
   TenantStats,
   UpdateTenantPayload,
 } from "@/lib/api/tenants";
+import { plansApi, PlanItem } from "@/lib/api/plans";
 import {
   AlertCircle,
   Building2,
@@ -114,6 +115,7 @@ export default function TenantsPage() {
 
   // Modals & Dialogs
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [planPreview, setPlanPreview] = useState<PlanItem | null>(null);
   const [editTarget, setEditTarget] = useState<TenantItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TenantItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -262,6 +264,17 @@ export default function TenantsPage() {
     }, 250);
     return () => clearTimeout(timer);
   }, [fetchTenants]);
+
+  // Read-only preview of the selected plan's default entitlements, shown in
+  // the Add Tenant modal so admins know what limits a new tenant will get
+  // (entitlements are now auto-seeded server-side from plans_config.py).
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    plansApi
+      .getPlan(addForm.plan_tier)
+      .then((plan) => setPlanPreview(plan))
+      .catch(() => setPlanPreview(null));
+  }, [isAddModalOpen, addForm.plan_tier]);
 
   // Client-side plan + date-range filtering (cheap enough to recompute every
   // render; dateRangeCutoff is pre-computed in the effect above since render
@@ -1047,6 +1060,18 @@ export default function TenantsPage() {
                   </select>
                 </div>
               </div>
+
+              {planPreview && planPreview.tier === addForm.plan_tier && (
+                <div className="p-2.5 bg-[#0c1427] border border-[#1b2a47] rounded-md text-[11px] text-slate-400">
+                  <span className="text-slate-300 font-medium">
+                    {planPreview.display_name} defaults:
+                  </span>{" "}
+                  {planPreview.display.queries} queries ·{" "}
+                  {planPreview.display.storage} storage ·{" "}
+                  {planPreview.display.assistants} assistant
+                  {planPreview.display.assistants === "1" ? "" : "s"}
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs text-slate-300 mb-1">
