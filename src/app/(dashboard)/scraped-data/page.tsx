@@ -12,6 +12,9 @@ import {
   Loader2,
   FileText,
   AlertCircle,
+  CheckCircle2,
+  Plus,
+  Globe,
 } from 'lucide-react';
 import {
   scrapedApi,
@@ -19,6 +22,7 @@ import {
   ScrapedStats,
   ScrapedPageDetail,
 } from '@/lib/api/scraped';
+import { ingestApi } from '@/lib/api/ingest';
 
 export default function ScrapedDataPage() {
   const [stats, setStats] = useState<ScrapedStats>({
@@ -41,6 +45,12 @@ export default function ScrapedDataPage() {
   const [selected, setSelected] = useState<ScrapedPageItem | null>(null);
   const [detail, setDetail] = useState<ScrapedPageDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const [crawlOpen, setCrawlOpen] = useState(false);
+  const [crawlUrl, setCrawlUrl] = useState('');
+  const [crawlMaxPages, setCrawlMaxPages] = useState('10');
+  const [crawling, setCrawling] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const fetchData = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
@@ -98,6 +108,32 @@ export default function ScrapedDataPage() {
     }
   };
 
+  const handleRunCrawl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crawlUrl.trim()) return;
+    setCrawling(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const maxPages = Number(crawlMaxPages);
+      const res = await ingestApi.run({
+        source: crawlUrl.trim(),
+        max_pages: Number.isFinite(maxPages) && maxPages > 0 ? maxPages : undefined,
+      });
+      setNotice(
+        `${res.message} Scraped pages will appear here once the crawl finishes (refresh in a moment).`
+      );
+      setCrawlOpen(false);
+      setCrawlUrl('');
+      // The crawl runs in the background on the API; refresh shortly after.
+      setTimeout(() => fetchData(true), 10000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start crawl');
+    } finally {
+      setCrawling(false);
+    }
+  };
+
   const formatDate = (value: string | null) => {
     if (!value) return '—';
     try {
@@ -122,8 +158,28 @@ export default function ScrapedDataPage() {
         </div>
       )}
 
+      {/* Notice Banner */}
+      {notice && (
+        <div className="flex items-start justify-between gap-3 p-4 mb-6 rounded-lg border border-emerald-800/60 bg-emerald-950/40 text-emerald-200 text-xs">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">{notice}</div>
+          </div>
+          <button onClick={() => setNotice(null)} className="text-slate-400 hover:text-white transition p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => setCrawlOpen(true)}
+          className="btn-primary flex items-center gap-2 text-xs"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Run Crawl</span>
+        </button>
         <button
           onClick={() => fetchData(true)}
           disabled={refreshing}
@@ -221,7 +277,7 @@ export default function ScrapedDataPage() {
                       <Info className="w-6 h-6 text-slate-500" />
                       <span>
                         {pages.length === 0
-                          ? 'No scraped data yet. Trigger a crawl from Web Sources.'
+                          ? 'No scraped data yet. Use "Run Crawl" above to scrape a website.'
                           : 'No pages match the current filters.'}
                       </span>
                     </div>
@@ -278,6 +334,57 @@ export default function ScrapedDataPage() {
           </table>
         </div>
       </div>
+
+      {/* Run Crawl Modal */}
+      {crawlOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#0d1527] border border-[#1b2a47] rounded-lg max-w-md w-full shadow-2xl relative">
+            <div className="flex items-center gap-2.5 p-6 pb-4 border-b border-[#1b2a47]">
+              <Globe className="w-5 h-5 text-blue-400" />
+              <h3 className="font-semibold text-white text-base">Run Website Crawl</h3>
+            </div>
+            <form onSubmit={handleRunCrawl} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">Target Website URL</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://mediusware.com"
+                  value={crawlUrl}
+                  onChange={(e) => setCrawlUrl(e.target.value)}
+                  className="input-dark w-full text-xs"
+                />
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  We discover pages via the site&apos;s sitemap and index them incrementally.
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">Max pages</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={crawlMaxPages}
+                  onChange={(e) => setCrawlMaxPages(e.target.value)}
+                  className="input-dark w-full text-xs"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCrawlOpen(false)}
+                  className="btn-secondary text-xs"
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={crawling} className="btn-primary text-xs">
+                  {crawling ? 'Starting...' : 'Start Crawl & Index'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {selected && (

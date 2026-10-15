@@ -2,30 +2,47 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { Plus, RefreshCw, Globe } from 'lucide-react';
+import { Plus, RefreshCw, Globe, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 import { mockDatabase } from '@/lib/db';
+import { ingestApi } from '@/lib/api/ingest';
 
 export default function WebSourcesPage() {
   const [sources, setSources] = useState(mockDatabase.webSources);
   const [newUrl, setNewUrl] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleAddWebsite = (e: React.FormEvent) => {
+  const handleAddWebsite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl) return;
-    const newEntry = {
-      id: sources.length + 1,
-      url: newUrl.startsWith('http') ? newUrl : `https://${newUrl}`,
-      pages: 18,
-      frequency: 'Daily',
-      lastSync: 'Just now',
-      index: 'Connected',
-      errors: 0,
-      status: 'Active',
-    };
-    setSources([newEntry, ...sources]);
-    setNewUrl('');
-    setIsModalOpen(false);
+    const target = newUrl.startsWith('http') ? newUrl : `https://${newUrl}`;
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const res = await ingestApi.run({ source: target, max_pages: 20 });
+      const newEntry = {
+        id: sources.length + 1,
+        url: target,
+        pages: 0,
+        frequency: 'Daily',
+        lastSync: 'Crawling…',
+        index: 'Connected',
+        errors: 0,
+        status: 'Active',
+      };
+      setSources([newEntry, ...sources]);
+      setMessage({ type: 'success', text: res.message || `Crawl started for ${target}.` });
+      setNewUrl('');
+      setIsModalOpen(false);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to start crawl',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -34,6 +51,44 @@ export default function WebSourcesPage() {
         title="Web Sources"
         subtitle="Crawl, sync and manage website knowledge."
       />
+
+      {/* Crawl notification */}
+      {message && (
+        <div
+          className={`flex items-start justify-between gap-3 p-4 mb-6 rounded-lg border text-xs ${
+            message.type === 'success'
+              ? 'border-emerald-800/60 bg-emerald-950/40 text-emerald-200'
+              : 'border-rose-800/60 bg-rose-950/40 text-rose-200'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {message.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            )}
+            <div className="leading-relaxed">
+              {message.text}
+              {message.type === 'success' && (
+                <>
+                  {' '}
+                  <a href="/scraped-data" className="underline hover:text-white">
+                    View scraped pages
+                  </a>
+                  .
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setMessage(null)}
+            className="text-slate-400 hover:text-white transition p-1"
+            aria-label="Dismiss"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Action Buttons matching Screenshot 7 */}
       <div className="flex items-center gap-3 mb-6">
@@ -142,8 +197,9 @@ export default function WebSourcesPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary text-xs">
-                  Start Crawl & Index
+                <button type="submit" disabled={submitting} className="btn-primary text-xs flex items-center gap-2">
+                  {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {submitting ? 'Starting...' : 'Start Crawl & Index'}
                 </button>
               </div>
             </form>
