@@ -21,6 +21,7 @@ interface WidgetConfigResponse {
   widget_name: string;
   primary_color: string;
   position: string;
+  is_enabled?: boolean;
   allowed_domains: string[];
   suggested_questions: string[];
 }
@@ -29,6 +30,7 @@ export default function WidgetDeploymentPage() {
   const [widgetName, setWidgetName] = useState('AI Assistant');
   const [primaryColor, setPrimaryColor] = useState('#4F46E5');
   const [position, setPosition] = useState('bottom-right');
+  const [isEnabled, setIsEnabled] = useState(true);
   const [suggestedQuestions, setSuggestedQuestions] = useState(
     'What services do you provide?\nHow can I get started?'
   );
@@ -50,6 +52,7 @@ export default function WidgetDeploymentPage() {
           if (config.widget_name) setWidgetName(config.widget_name);
           if (config.primary_color) setPrimaryColor(config.primary_color);
           if (config.position) setPosition(config.position);
+          if (typeof config.is_enabled === 'boolean') setIsEnabled(config.is_enabled);
           if (config.tenant_id) setTenantId(config.tenant_id);
           if (config.allowed_domains && config.allowed_domains.length > 0) {
             setAllowedDomains(config.allowed_domains.join(', '));
@@ -112,6 +115,7 @@ export default function WidgetDeploymentPage() {
           widget_name: widgetName,
           primary_color: primaryColor,
           position: position,
+          is_enabled: isEnabled,
           allowed_domains: domainsList.length > 0 ? domainsList : ['*'],
           suggested_questions: questionsList,
         }),
@@ -161,6 +165,35 @@ export default function WidgetDeploymentPage() {
                 </span>
               )}
             </h3>
+
+            {/* Widget Enable/Disable Switch */}
+            <div className="p-3.5 rounded-lg border border-slate-700/60 bg-[#0d1627] flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-semibold text-white">
+                  Widget Status
+                </label>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {isEnabled
+                    ? 'Widget is live and will appear on your website.'
+                    : 'Widget is disabled and hidden from your website.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEnabled(!isEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isEnabled ? 'bg-emerald-500' : 'bg-slate-700'
+                }`}
+                role="switch"
+                aria-checked={isEnabled}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    isEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
 
             <div>
               <label className="block text-xs text-slate-300 mb-1">Widget Name</label>

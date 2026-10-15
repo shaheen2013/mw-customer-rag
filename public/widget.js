@@ -22,7 +22,7 @@
       border-radius: 50%;
       background: ${primaryColor};
       color: #fff;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
@@ -231,8 +231,42 @@
       if (tenantId) headers['X-Tenant-ID'] = tenantId;
 
       const res = await fetch(`${apiHost}/api/v1/chat/widget-config`, { headers });
-      if (!res.ok) return;
+      if (!res.ok) {
+        // Fallback display if request fails
+        button.style.display = 'flex';
+        return;
+      }
       const data = await res.json();
+
+      // Check if widget is disabled by administrator
+      if (data.is_enabled === false) {
+        button.style.display = 'none';
+        box.style.display = 'none';
+        return;
+      }
+
+      // Widget is enabled, display button
+      button.style.display = 'flex';
+
+      // Screen Position
+      if (data.position === 'bottom-left') {
+        button.style.left = '24px';
+        button.style.right = 'auto';
+        box.style.left = '24px';
+        box.style.right = 'auto';
+      } else {
+        button.style.right = '24px';
+        button.style.left = 'auto';
+        box.style.right = '24px';
+        box.style.left = 'auto';
+      }
+
+      // Brand Primary Color
+      if (data.primary_color) {
+        primaryColor = data.primary_color;
+        button.style.background = primaryColor;
+        if (sendBtn) sendBtn.style.background = primaryColor;
+      }
 
       if (data.assistant_name && nameEl) {
         nameEl.textContent = data.assistant_name;
@@ -256,6 +290,7 @@
       }
     } catch (e) {
       console.warn('Mediusware widget config fetch error:', e);
+      button.style.display = 'flex';
     }
   }
 
@@ -274,6 +309,7 @@
 
     const userMsg = document.createElement('div');
     userMsg.className = 'mw-msg mw-msg-user';
+    userMsg.style.background = primaryColor;
     userMsg.textContent = text;
     msgsDiv.appendChild(userMsg);
     msgsDiv.scrollTop = msgsDiv.scrollHeight;
