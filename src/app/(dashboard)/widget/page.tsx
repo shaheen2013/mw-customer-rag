@@ -70,15 +70,16 @@ export default function WidgetDeploymentPage() {
 
   // Compute live embed code based on current configuration
   const apiBase = getApiBaseUrl();
+  const apiHost = apiBase || 'http://localhost:8000';
   const scriptHost =
     typeof window !== 'undefined'
       ? window.location.origin
-      : apiBase || 'http://localhost:8000';
+      : apiHost;
 
   const embedCodeSnippet = `<script
   src="${scriptHost}/widget.js"
   data-tenant-id="${tenantId || '00000000-0000-0000-0000-000000000001'}"
-  data-api-host="${scriptHost}"
+  data-api-host="${apiHost}"
   data-color="${primaryColor}"
   async>
 </script>`;

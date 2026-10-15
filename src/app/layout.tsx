@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/context/AuthContext";
@@ -24,6 +25,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const apiHost = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   return (
     <html
       lang="en"
@@ -33,6 +36,13 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
         </QueryProvider>
+        <script
+          src="http://localhost:3000/widget.js"
+          data-tenant-id="3b8825f5-c2fe-4824-bc46-2e108457bc00"
+          data-api-host="http://localhost:8000"
+          data-color="#4F46E5"
+          async>
+        </script>
       </body>
     </html>
   );
