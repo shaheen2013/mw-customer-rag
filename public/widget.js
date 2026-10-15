@@ -232,8 +232,9 @@
 
       const res = await fetch(`${apiHost}/api/v1/chat/widget-config`, { headers });
       if (!res.ok) {
-        // Fallback display if request fails
-        button.style.display = 'flex';
+        // Unauthorized domain (403), disabled, or error - keep widget completely hidden
+        button.style.display = 'none';
+        box.style.display = 'none';
         return;
       }
       const data = await res.json();
@@ -290,7 +291,8 @@
       }
     } catch (e) {
       console.warn('Mediusware widget config fetch error:', e);
-      button.style.display = 'flex';
+      button.style.display = 'none';
+      box.style.display = 'none';
     }
   }
 
@@ -331,7 +333,11 @@
       });
 
       if (!response.ok) {
-        botMsg.textContent = `Server error (${response.status}). Please check API host or tenant configuration.`;
+        if (response.status === 403) {
+          botMsg.textContent = 'This domain is not authorized to query this assistant.';
+        } else {
+          botMsg.textContent = `Server error (${response.status}). Please check API host or tenant configuration.`;
+        }
         return;
       }
 
