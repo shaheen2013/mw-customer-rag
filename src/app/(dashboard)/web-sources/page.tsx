@@ -44,7 +44,6 @@ export default function WebSourcesPage() {
   const prevCrawlingRef = useRef(false);
 
   const fetchSources = useCallback(async (isBackground = false) => {
-    if (!isBackground) setRefreshing(true);
     try {
       const data = await ingestApi.getSources();
       if (data) {
@@ -72,8 +71,37 @@ export default function WebSourcesPage() {
   }, []);
 
   useEffect(() => {
-    fetchSources();
-  }, [fetchSources]);
+    let ignore = false;
+    async function loadInitialSources() {
+      try {
+        const data = await ingestApi.getSources();
+        if (!ignore && data) {
+          setStats(data.stats);
+          setSources(data.sources || []);
+          if (prevCrawlingRef.current && !data.stats.is_crawling) {
+            setMessage({
+              type: 'success',
+              text: `Web crawling and vector ingestion finished! ${data.stats.pages_indexed} pages are now indexed and available in the Knowledge Base.`,
+              action: 'widget',
+            });
+          }
+          prevCrawlingRef.current = data.stats.is_crawling;
+        }
+      } catch (err) {
+        console.error('Failed to load web sources:', err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    }
+
+    loadInitialSources();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // Polling when crawling is in progress
   useEffect(() => {
@@ -93,7 +121,7 @@ export default function WebSourcesPage() {
     setMessage(null);
 
     try {
-      const res = await ingestApi.addSource({
+      await ingestApi.addSource({
         url: newUrl,
         max_pages: parseInt(maxPages, 10) || 20,
         frequency,
@@ -178,12 +206,7 @@ export default function WebSourcesPage() {
     try {
       const date = new Date(timestamp);
       if (isNaN(date.getTime())) return timestamp;
-      const diffMinutes = Math.floor((Date.now() - date.getTime()) / (1000 * 60));
-      if (diffMinutes < 1) return 'Just now';
-      if (diffMinutes < 60) return `${diffMinutes}m ago`;
-      const diffHours = Math.floor(diffMinutes / 60);
-      if (diffHours < 24) return `${diffHours}h ago`;
-      return `${Math.floor(diffHours / 24)}d ago`;
+      return `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
     } catch {
       return timestamp;
     }
@@ -283,7 +306,10 @@ export default function WebSourcesPage() {
         </div>
 
         <button
-          onClick={() => fetchSources()}
+          onClick={() => {
+            setRefreshing(true);
+            fetchSources();
+          }}
           disabled={refreshing}
           className="text-slate-400 hover:text-white flex items-center gap-1.5 text-xs transition"
           title="Refresh table"

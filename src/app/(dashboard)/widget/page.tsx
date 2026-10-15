@@ -11,14 +11,12 @@ import {
   CheckCircle,
   Eye,
   MessageSquare,
-  Globe,
   Code2,
   LayoutTemplate,
   CheckCircle2,
   Moon,
   Sun,
   Sidebar,
-  Sparkles,
 } from 'lucide-react';
 import { apiClient, getApiBaseUrl } from '@/lib/api-client';
 

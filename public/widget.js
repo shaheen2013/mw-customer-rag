@@ -645,7 +645,7 @@
       if (!hasReceivedData) {
         botMsg.textContent = 'No response received. Please try again.';
       }
-    } catch (err) {
+    } catch {
       botMsg.textContent = 'Connection error. Please try again.';
     }
   }

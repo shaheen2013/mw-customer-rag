@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/context/AuthContext";
@@ -39,7 +38,7 @@ export default function RootLayout({
         <script
           src="http://localhost:3000/widget.js"
           data-tenant-id="3b8825f5-c2fe-4824-bc46-2e108457bc00"
-          data-api-host="http://localhost:8000"
+          data-api-host={apiHost}
           data-color="#4F46E5"
           async>
         </script>
