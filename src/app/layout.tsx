@@ -25,6 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const apiHost = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const tenantId = "3b8825f5-c2fe-4824-bc46-2e108457bc00";
 
   return (
     <html
@@ -37,7 +38,7 @@ export default function RootLayout({
         </QueryProvider>
         <script
           src="http://localhost:3000/widget.js"
-          data-tenant-id="3b8825f5-c2fe-4824-bc46-2e108457bc00"
+          data-tenant-id={tenantId}
           data-api-host={apiHost}
           data-color="#4F46E5"
           async>
