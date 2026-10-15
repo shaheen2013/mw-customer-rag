@@ -132,6 +132,7 @@ export default function AdminUsagePage() {
   }, [selectedTenantId, dateRange]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 
@@ -460,9 +461,15 @@ export default function AdminUsagePage() {
                       color: '#fff',
                       fontSize: '12px',
                     }}
-                    formatter={(val: any, name: any) => [
+                    formatter={(val, name) => [
                       formatNumber(Number(val)),
-                      String(name === 'prompt_tokens' ? 'Prompt Tokens' : name === 'completion_tokens' ? 'Completion Tokens' : name),
+                      String(
+                        name === 'prompt_tokens'
+                          ? 'Prompt Tokens'
+                          : name === 'completion_tokens'
+                            ? 'Completion Tokens'
+                            : name
+                      ),
                     ]}
                     labelFormatter={(label) => `Date: ${label}`}
                   />
@@ -526,7 +533,7 @@ export default function AdminUsagePage() {
                       color: '#fff',
                       fontSize: '12px',
                     }}
-                    formatter={(val: any) => [`$${Number(val).toFixed(4)}`, 'Cost']}
+                    formatter={(val) => [`$${Number(val).toFixed(4)}`, 'Cost']}
                     labelFormatter={(label) => `Date: ${label}`}
                   />
                   <Bar dataKey="cost_usd" fill="#10b981" radius={[4, 4, 0, 0]} />

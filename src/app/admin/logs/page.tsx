@@ -180,6 +180,7 @@ export default function AdminLogsPage() {
   }, [selectedTenantId, category, severity, debouncedSearch, dateRange, page]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLogs();
   }, [fetchLogs]);
 

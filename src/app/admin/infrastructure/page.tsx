@@ -74,6 +74,7 @@ export default function AdminInfrastructurePage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchHealth();
     // Auto-refresh cluster health every 30 seconds
     const interval = setInterval(fetchHealth, 30000);
