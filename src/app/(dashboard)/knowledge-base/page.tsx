@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { Upload, RefreshCw, FileText, Trash2, X, AlertCircle, AlertTriangle, CheckCircle2, Loader2, Info } from 'lucide-react';
+import { Upload, RefreshCw, FileText, Trash2, X, AlertCircle, AlertTriangle, CheckCircle2, Loader2, Info, Globe, Search } from 'lucide-react';
 import { kbApi, DocumentItem, KnowledgeStats } from '@/lib/api/kb';
+import { ingestApi } from '@/lib/api/ingest';
 import { ApiError } from '@/lib/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -24,6 +25,9 @@ export default function KnowledgeBasePage() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentItem | null>(null);
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [clearingScraped, setClearingScraped] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'upload' | 'web'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState<{
     type: 'success' | 'error' | 'warning' | 'info';
     title?: string;
@@ -158,6 +162,49 @@ export default function KnowledgeBasePage() {
     }
   };
 
+  const handleClearScrapedData = async () => {
+    if (clearingScraped) return;
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete ALL web-scraped pages and their vector embeddings from the Knowledge Base?\n\nNote: Uploaded documents (PDFs, DOCX, TXT) will NOT be deleted.'
+    );
+    if (!confirmed) return;
+
+    setClearingScraped(true);
+    setMessage(null);
+    try {
+      const res = await ingestApi.clearAll();
+      setMessage({
+        type: 'success',
+        title: 'Scraped Data Cleared',
+        text: res.message || 'Successfully purged all scraped pages and vector embeddings.',
+      });
+      await fetchData();
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to clear scraped data';
+      setMessage({ type: 'error', title: 'Clear Error', text: errorMsg });
+    } finally {
+      setClearingScraped(false);
+    }
+  };
+
+  const isWebDoc = (d: DocumentItem) =>
+    Boolean(d.source_ref?.includes('scraped-data') || d.metadata?.source_type === 'web_page');
+
+  const filteredDocs = docs.filter((d) => {
+    const isWeb = isWebDoc(d);
+    if (sourceFilter === 'upload' && isWeb) return false;
+    if (sourceFilter === 'web' && !isWeb) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        d.file.toLowerCase().includes(q) ||
+        d.source_ref.toLowerCase().includes(q) ||
+        (d.type || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
   return (
     <div>
       <Header
@@ -245,6 +292,22 @@ export default function KnowledgeBasePage() {
           <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${reindexing ? 'animate-spin text-blue-400' : ''}`} />
           <span>{reindexing ? 'Re-indexing...' : 'Re-index Selected'}</span>
         </button>
+
+        {canManage && (
+          <button
+            onClick={handleClearScrapedData}
+            disabled={clearingScraped}
+            className="px-3 py-1.5 rounded-lg border border-rose-800/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 flex items-center gap-2 text-xs font-medium transition disabled:opacity-40"
+            title="Purge all web-scraped documents and vector embeddings from the knowledge base"
+          >
+            {clearingScraped ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span>{clearingScraped ? 'Clearing Scraped...' : 'Clear Scraped Data'}</span>
+          </button>
+        )}
       </div>
 
       {/* 4 Status Cards matching Screenshot 6 */}
@@ -278,6 +341,55 @@ export default function KnowledgeBasePage() {
         </div>
       </div>
 
+      {/* Search & Source Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSourceFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              sourceFilter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            All ({docs.length})
+          </button>
+          <button
+            onClick={() => setSourceFilter('upload')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
+              sourceFilter === 'upload'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            <Upload className="w-3 h-3" />
+            Uploaded ({docs.filter((d) => !isWebDoc(d)).length})
+          </button>
+          <button
+            onClick={() => setSourceFilter('web')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
+              sourceFilter === 'web'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            <Globe className="w-3 h-3 text-emerald-400" />
+            Web Scraped ({docs.filter((d) => isWebDoc(d)).length})
+          </button>
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-dark w-full pl-8 py-1.5 text-xs"
+          />
+        </div>
+      </div>
+
       {/* Main Documents Table matching Screenshot 6 */}
       <div className="card-panel overflow-hidden">
         <div className="overflow-x-auto">
@@ -304,20 +416,24 @@ export default function KnowledgeBasePage() {
                     </div>
                   </td>
                 </tr>
-              ) : docs.length === 0 ? (
+              ) : filteredDocs.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Info className="w-6 h-6 text-slate-500" />
-                      <span>No documents found in knowledge base. Upload your first document above.</span>
+                      <span>No documents found matching the filter.</span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                docs.map((doc) => (
+                filteredDocs.map((doc) => (
                   <tr key={doc.id} className="table-row">
                     <td className="py-3.5 px-4 font-semibold text-white flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                      {isWebDoc(doc) ? (
+                        <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                      )}
                       <span className="truncate max-w-[200px]" title={doc.file}>
                         {doc.file}
                       </span>
@@ -326,6 +442,11 @@ export default function KnowledgeBasePage() {
                       <span className="bg-[#121e36] border border-[#1b2a47] px-2 py-0.5 rounded text-[11px] font-mono text-slate-300">
                         {doc.type}
                       </span>
+                      {isWebDoc(doc) && (
+                        <span className="ml-1.5 text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/40 px-1.5 py-0.5 rounded font-sans">
+                          Web
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-slate-400">{doc.size}</td>
                     <td className="py-3.5 px-4 text-slate-400">{doc.uploaded}</td>

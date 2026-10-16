@@ -31,10 +31,13 @@ export default function WebSourcesPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newUrl, setNewUrl] = useState('');
+  const [excludePaths, setExcludePaths] = useState('');
   const [maxPages, setMaxPages] = useState('20');
   const [frequency, setFrequency] = useState('Daily');
   const [submitting, setSubmitting] = useState(false);
+  const [crawlingNextId, setCrawlingNextId] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
   const [message, setMessage] = useState<{
     type: 'success' | 'error' | 'info';
     text: string;
@@ -120,14 +123,21 @@ export default function WebSourcesPage() {
     setSubmitting(true);
     setMessage(null);
 
+    const parsedExcludePaths = excludePaths
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+
     try {
       await ingestApi.addSource({
         url: newUrl,
         max_pages: parseInt(maxPages, 10) || 20,
         frequency,
+        exclude_paths: parsedExcludePaths.length > 0 ? parsedExcludePaths : undefined,
       });
 
       setNewUrl('');
+      setExcludePaths('');
       setIsModalOpen(false);
       setMessage({
         type: 'info',
@@ -143,6 +153,25 @@ export default function WebSourcesPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCrawlNext = async (sourceId: string, url: string, batchSize: number = 50) => {
+    setCrawlingNextId(sourceId);
+    try {
+      setMessage({
+        type: 'info',
+        text: `Crawling next batch of pending pages for ${url}…`,
+      });
+      await ingestApi.crawlNext(sourceId, batchSize);
+      await fetchSources(true);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to crawl next batch.',
+      });
+    } finally {
+      setCrawlingNextId(null);
     }
   };
 
@@ -182,10 +211,41 @@ export default function WebSourcesPage() {
     }
   };
 
-  const handleDeleteSource = async (sourceId: string, url: string) => {
-    if (!confirm(`Are you sure you want to remove ${url} from Web Sources?`)) return;
+  const handleClearAll = async () => {
+    if (clearingAll) return;
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete ALL scraped websites, their stored files, and their vector embeddings from the Knowledge Base?\n\nThis action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    setClearingAll(true);
     try {
-      await ingestApi.deleteSource(sourceId);
+      const res = await ingestApi.clearAll();
+      setSources([]);
+      setMessage({
+        type: 'success',
+        text: res.message || 'Successfully cleared all scraped data and vector embeddings.',
+      });
+      await fetchSources(true);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to clear scraped data.',
+      });
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  const handleDeleteSource = async (sourceId: string, url: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete ${url}?\n\nThis will remove the source and wipe all its indexed pages and vector embeddings from the Knowledge Base.`
+      )
+    )
+      return;
+    try {
+      await ingestApi.deleteSource(sourceId, true);
       setSources((prev) => prev.filter((s) => s.id !== sourceId));
       fetchSources(true);
     } catch (err) {
@@ -303,6 +363,20 @@ export default function WebSourcesPage() {
             <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${syncingAll ? 'animate-spin' : ''}`} />
             <span>{syncingAll ? 'Syncing...' : 'Sync All'}</span>
           </button>
+
+          <button
+            onClick={handleClearAll}
+            disabled={clearingAll || (sources.length === 0 && stats.pages_indexed === 0)}
+            className="px-3 py-1.5 rounded-lg border border-rose-800/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 flex items-center gap-2 text-xs font-medium transition disabled:opacity-40"
+            title="Purge all scraped websites, files, and vector embeddings"
+          >
+            {clearingAll ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span>{clearingAll ? 'Clearing...' : 'Clear All Scraped Data'}</span>
+          </button>
         </div>
 
         <button
@@ -405,6 +479,19 @@ export default function WebSourcesPage() {
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
+                      {s.exclude_paths && s.exclude_paths.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1 items-center">
+                          <span className="text-[10px] text-slate-500 font-normal">Excluded:</span>
+                          {s.exclude_paths.map((p, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[10px] bg-slate-800/90 text-rose-300/80 border border-slate-700/60 px-1.5 py-0.5 rounded font-mono"
+                            >
+                              {p}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-medium text-blue-400">
                       {s.status === 'Crawling' ? (
@@ -412,7 +499,14 @@ export default function WebSourcesPage() {
                           <Loader2 className="w-3 h-3 animate-spin" /> Ingesting…
                         </span>
                       ) : (
-                        s.pages
+                        <div>
+                          <span className="text-white font-semibold">{s.pages}</span>
+                          {s.pending_pages && s.pending_pages > 0 ? (
+                            <div className="text-[11px] text-amber-400/90 font-normal mt-0.5">
+                              +{s.pending_pages} pending
+                            </div>
+                          ) : null}
+                        </div>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-slate-400">{s.frequency || 'Daily'}</td>
@@ -445,6 +539,21 @@ export default function WebSourcesPage() {
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {Boolean(s.pending_pages && s.pending_pages > 0) && s.status !== 'Crawling' ? (
+                          <button
+                            onClick={() => handleCrawlNext(s.id, s.url, 50)}
+                            disabled={crawlingNextId === s.id}
+                            className="bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-medium shadow-sm"
+                            title={`Crawl next batch of up to 50 pending pages (${s.pending_pages} remaining)`}
+                          >
+                            {crawlingNextId === s.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3 text-emerald-400" />
+                            )}
+                            <span>Crawl Next ({Math.min(s.pending_pages || 0, 50)})</span>
+                          </button>
+                        ) : null}
                         <button
                           onClick={() => handleSyncSource(s.id, s.url)}
                           disabled={s.status === 'Crawling'}
@@ -514,6 +623,25 @@ export default function WebSourcesPage() {
                 />
               </div>
 
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-slate-300">
+                    Exclude Paths (Optional)
+                  </label>
+                  <span className="text-[11px] text-slate-500">Comma-separated</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="/blog/*, /careers/*, /tags/*, *.pdf"
+                  value={excludePaths}
+                  onChange={(e) => setExcludePaths(e.target.value)}
+                  className="input-dark w-full text-xs font-mono"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Wildcards supported (e.g. <span className="text-slate-300">/blog/*</span> or <span className="text-slate-300">mediusware/blog/*</span>) to skip specific paths.
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5">
@@ -528,6 +656,7 @@ export default function WebSourcesPage() {
                     <option value="20">20 pages (Standard)</option>
                     <option value="50">50 pages (Thorough)</option>
                     <option value="100">100 pages (Deep)</option>
+                    <option value="250">250 pages (Extensive)</option>
                   </select>
                 </div>
 

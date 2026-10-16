@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Plus,
   Globe,
+  Trash2,
 } from 'lucide-react';
 import {
   scrapedApi,
@@ -50,6 +51,7 @@ export default function ScrapedDataPage() {
   const [crawlUrl, setCrawlUrl] = useState('');
   const [crawlMaxPages, setCrawlMaxPages] = useState('10');
   const [crawling, setCrawling] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   const fetchData = useCallback(async (showSpinner = false) => {
@@ -134,6 +136,35 @@ export default function ScrapedDataPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (clearingAll) return;
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete ALL scraped websites, their stored markdown files, and their vector embeddings from the Knowledge Base?\n\nThis cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    setClearingAll(true);
+    setError(null);
+    try {
+      const res = await ingestApi.clearAll();
+      setPages([]);
+      setStats({
+        total_pages: 0,
+        indexed: 0,
+        failed: 0,
+        sites: 0,
+        categories: 0,
+        last_scraped_at: null,
+      });
+      setNotice(res.message || 'Successfully cleared all scraped data and vector embeddings.');
+      await fetchData(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear scraped data.');
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
   const formatDate = (value: string | null) => {
     if (!value) return '—';
     try {
@@ -172,14 +203,29 @@ export default function ScrapedDataPage() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => setCrawlOpen(true)}
-          className="btn-primary flex items-center gap-2 text-xs"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Run Crawl</span>
-        </button>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCrawlOpen(true)}
+            className="btn-primary flex items-center gap-2 text-xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Run Crawl</span>
+          </button>
+          <button
+            onClick={handleClearAll}
+            disabled={clearingAll || stats.total_pages === 0}
+            className="px-3 py-1.5 rounded-lg border border-rose-800/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 flex items-center gap-2 text-xs font-medium transition disabled:opacity-40"
+            title="Purge all scraped websites, files, and vector embeddings"
+          >
+            {clearingAll ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span>{clearingAll ? 'Clearing...' : 'Clear All Scraped Data'}</span>
+          </button>
+        </div>
         <button
           onClick={() => fetchData(true)}
           disabled={refreshing}

@@ -31,6 +31,10 @@ export interface WebSourceItem {
   status: 'Active' | 'Crawling' | 'Failed';
   created_at?: string;
   error_message?: string;
+  exclude_paths?: string[];
+  total_discovered?: number;
+  pending_pages?: number;
+  max_pages?: number;
 }
 
 export interface WebSourcesResponse {
@@ -69,10 +73,24 @@ export const ingestApi = {
     url: string;
     max_pages?: number;
     frequency?: string;
+    exclude_paths?: string[];
   }): Promise<{ status: string; message: string; data: WebSourceItem }> => {
     return apiClient('/api/v1/kb/ingest/sources', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Crawl the next batch of pending discovered URLs for a source.
+   */
+  crawlNext: async (
+    sourceId: string,
+    maxPages: number = 50
+  ): Promise<{ message: string; crawling_count: number; pending_remaining: number }> => {
+    return apiClient(`/api/v1/kb/ingest/sources/${sourceId}/crawl-next`, {
+      method: 'POST',
+      body: JSON.stringify({ max_pages: maxPages }),
     });
   },
 
@@ -95,10 +113,22 @@ export const ingestApi = {
   },
 
   /**
-   * Remove a registered web source.
+   * Remove a registered web source and purge associated scraped data/vectors.
    */
-  deleteSource: async (sourceId: string): Promise<{ message: string; source_id: string }> => {
-    return apiClient(`/api/v1/kb/ingest/sources/${sourceId}`, {
+  deleteSource: async (
+    sourceId: string,
+    purgeData: boolean = true
+  ): Promise<{ message: string; source_id: string }> => {
+    return apiClient(`/api/v1/kb/ingest/sources/${sourceId}?purge_data=${purgeData}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Purge all scraped websites, files, and vector embeddings for the tenant.
+   */
+  clearAll: async (): Promise<{ status: string; message: string }> => {
+    return apiClient('/api/v1/kb/ingest/sources/clear-all', {
       method: 'DELETE',
     });
   },
