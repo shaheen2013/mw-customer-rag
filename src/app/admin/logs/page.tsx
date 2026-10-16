@@ -20,19 +20,13 @@ import {
   XCircle,
   Info,
   Search,
-  Filter,
-  Calendar,
   Download,
   RefreshCw,
   Building2,
-  User,
   ChevronLeft,
   ChevronRight,
   Code,
   X,
-  ExternalLink,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 
 const CATEGORY_OPTIONS = [

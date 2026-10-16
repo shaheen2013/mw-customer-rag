@@ -8,25 +8,18 @@ import {
   DiagnosticsReport,
 } from '@/lib/api/infrastructure';
 import {
-  Server,
   Database,
-  Cpu,
   Layers,
   Globe,
   Bot,
   Zap,
   Activity,
   CheckCircle2,
-  AlertTriangle,
   XCircle,
   RefreshCw,
-  HardDrive,
-  ShieldCheck,
-  Clock,
   Play,
   Loader2,
   X,
-  Info,
   Terminal,
 } from 'lucide-react';
 
@@ -88,7 +81,7 @@ export default function AdminInfrastructurePage() {
     try {
       const report = await infrastructureApi.runDiagnostics();
       setDiagReport(report);
-    } catch (err) {
+    } catch {
       alert('Diagnostic benchmark encountered an error.');
     } finally {
       setRunningDiag(false);

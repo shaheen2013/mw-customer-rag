@@ -36,7 +36,6 @@ export default function ProfileBanner({
   isAdminView,
   name,
   email,
-  phoneNumber,
   tenantName,
   userRole,
   createdAt,

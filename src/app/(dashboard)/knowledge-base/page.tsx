@@ -5,7 +5,6 @@ import Header from '@/components/Header';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Upload, RefreshCw, FileText, Trash2, X, AlertCircle, AlertTriangle, CheckCircle2, Loader2, Info, Globe, Search } from 'lucide-react';
 import { kbApi, DocumentItem, KnowledgeStats } from '@/lib/api/kb';
-import { ingestApi } from '@/lib/api/ingest';
 import { ApiError } from '@/lib/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
 
