@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from '@/components/Header';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import {
   Plus,
   RefreshCw,
@@ -38,6 +39,9 @@ export default function WebSourcesPage() {
   const [crawlingNextId, setCrawlingNextId] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [sourceToDelete, setSourceToDelete] = useState<{ id: string; url: string } | null>(null);
+  const [deletingSource, setDeletingSource] = useState(false);
   const [message, setMessage] = useState<{
     type: 'success' | 'error' | 'info';
     text: string;
@@ -211,13 +215,12 @@ export default function WebSourcesPage() {
     }
   };
 
-  const handleClearAll = async () => {
-    if (clearingAll) return;
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete ALL scraped websites, their stored files, and their vector embeddings from the Knowledge Base?\n\nThis action cannot be undone.'
-    );
-    if (!confirmed) return;
+  const handleClearAll = () => {
+    if (clearingAll || (sources.length === 0 && stats.pages_indexed === 0)) return;
+    setShowClearAllDialog(true);
+  };
 
+  const confirmClearAll = async () => {
     setClearingAll(true);
     try {
       const res = await ingestApi.clearAll();
@@ -234,22 +237,33 @@ export default function WebSourcesPage() {
       });
     } finally {
       setClearingAll(false);
+      setShowClearAllDialog(false);
     }
   };
 
-  const handleDeleteSource = async (sourceId: string, url: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete ${url}?\n\nThis will remove the source and wipe all its indexed pages and vector embeddings from the Knowledge Base.`
-      )
-    )
-      return;
+  const handleDeleteSource = (sourceId: string, url: string) => {
+    setSourceToDelete({ id: sourceId, url });
+  };
+
+  const confirmDeleteSource = async () => {
+    if (!sourceToDelete) return;
+    setDeletingSource(true);
     try {
-      await ingestApi.deleteSource(sourceId, true);
-      setSources((prev) => prev.filter((s) => s.id !== sourceId));
-      fetchSources(true);
+      await ingestApi.deleteSource(sourceToDelete.id, true);
+      setSources((prev) => prev.filter((s) => s.id !== sourceToDelete.id));
+      setMessage({
+        type: 'success',
+        text: `Successfully deleted ${sourceToDelete.url} and removed its indexed pages and vector embeddings.`,
+      });
+      await fetchSources(true);
     } catch (err) {
-      console.error('Failed to delete web source:', err);
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to delete web source.',
+      });
+    } finally {
+      setDeletingSource(false);
+      setSourceToDelete(null);
     }
   };
 
@@ -697,6 +711,31 @@ export default function WebSourcesPage() {
           </div>
         </div>
       )}
+      {/* Delete Source Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!sourceToDelete}
+        title="Delete Website Source?"
+        description="This will remove the website source and purge all its scraped pages and vector embeddings from the Knowledge Base. This action cannot be undone."
+        subject={sourceToDelete?.url}
+        confirmLabel={deletingSource ? 'Deleting...' : 'Delete Source'}
+        variant="danger"
+        loading={deletingSource}
+        onConfirm={confirmDeleteSource}
+        onCancel={() => setSourceToDelete(null)}
+      />
+
+      {/* Clear All Scraped Data Confirmation Dialog */}
+      <ConfirmDialog
+        open={showClearAllDialog}
+        title="Clear All Scraped Data?"
+        description="This will permanently delete all registered website sources, their scraped markdown files, and their vector embeddings from the Knowledge Base. Uploaded files will be preserved. This action cannot be undone."
+        subject={`${stats.total_websites} website(s), ${stats.pages_indexed} indexed page(s)`}
+        confirmLabel={clearingAll ? 'Clearing All...' : 'Clear All Scraped Data'}
+        variant="danger"
+        loading={clearingAll}
+        onConfirm={confirmClearAll}
+        onCancel={() => setShowClearAllDialog(false)}
+      />
     </div>
   );
 }

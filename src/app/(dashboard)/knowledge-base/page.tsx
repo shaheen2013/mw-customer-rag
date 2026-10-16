@@ -25,7 +25,11 @@ export default function KnowledgeBasePage() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentItem | null>(null);
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [clearingScraped, setClearingScraped] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deletingBatch, setDeletingBatch] = useState(false);
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'upload' | 'web'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState<{
@@ -162,28 +166,81 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  const handleClearScrapedData = async () => {
-    if (clearingScraped) return;
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete ALL web-scraped pages and their vector embeddings from the Knowledge Base?\n\nNote: Uploaded documents (PDFs, DOCX, TXT) will NOT be deleted.'
-    );
-    if (!confirmed) return;
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredDocs.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDocs.map((d) => d.id)));
+    }
+  };
 
-    setClearingScraped(true);
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.size === 0) return;
+    setShowBatchDeleteDialog(true);
+  };
+
+  const confirmDeleteSelected = async () => {
+    if (selectedIds.size === 0 || deletingBatch) return;
+    setDeletingBatch(true);
     setMessage(null);
     try {
-      const res = await ingestApi.clearAll();
+      let count = 0;
+      for (const id of Array.from(selectedIds)) {
+        await kbApi.deleteDocument(id);
+        count++;
+      }
+      setSelectedIds(new Set());
       setMessage({
         type: 'success',
-        title: 'Scraped Data Cleared',
-        text: res.message || 'Successfully purged all scraped pages and vector embeddings.',
+        title: 'Documents Deleted',
+        text: `Successfully deleted ${count} selected document(s).`,
       });
       await fetchData();
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to clear scraped data';
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to delete selected documents';
+      setMessage({ type: 'error', title: 'Batch Delete Error', text: errorMsg });
+    } finally {
+      setDeletingBatch(false);
+      setShowBatchDeleteDialog(false);
+    }
+  };
+
+  const handleClearAll = () => {
+    if (clearingAll || docs.length === 0) return;
+    setShowClearAllDialog(true);
+  };
+
+  const confirmClearAll = async () => {
+    setClearingAll(true);
+    setMessage(null);
+    try {
+      const scope: 'all' | 'scraped' | 'uploaded' =
+        sourceFilter === 'web' ? 'scraped' : sourceFilter === 'upload' ? 'uploaded' : 'all';
+      const res = await kbApi.clearAll(scope);
+      setSelectedIds(new Set());
+      setMessage({
+        type: 'success',
+        title: 'Knowledge Base Cleared',
+        text: res.message || 'Successfully purged documents and vector embeddings.',
+      });
+      await fetchData();
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to clear documents';
       setMessage({ type: 'error', title: 'Clear Error', text: errorMsg });
     } finally {
-      setClearingScraped(false);
+      setClearingAll(false);
+      setShowClearAllDialog(false);
     }
   };
 
@@ -293,19 +350,43 @@ export default function KnowledgeBasePage() {
           <span>{reindexing ? 'Re-indexing...' : 'Re-index Selected'}</span>
         </button>
 
-        {canManage && (
+        {canManage && selectedIds.size > 0 && (
           <button
-            onClick={handleClearScrapedData}
-            disabled={clearingScraped}
-            className="px-3 py-1.5 rounded-lg border border-rose-800/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 flex items-center gap-2 text-xs font-medium transition disabled:opacity-40"
-            title="Purge all web-scraped documents and vector embeddings from the knowledge base"
+            onClick={handleDeleteSelected}
+            disabled={deletingBatch}
+            className="px-3 py-1.5 rounded-lg border border-rose-800/60 bg-rose-950/60 hover:bg-rose-900 text-rose-200 flex items-center gap-2 text-xs font-medium transition"
+            title="Delete selected documents"
           >
-            {clearingScraped ? (
+            {deletingBatch ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
             ) : (
               <Trash2 className="w-3.5 h-3.5 text-rose-400" />
             )}
-            <span>{clearingScraped ? 'Clearing Scraped...' : 'Clear Scraped Data'}</span>
+            <span>Delete Selected ({selectedIds.size})</span>
+          </button>
+        )}
+
+        {canManage && (
+          <button
+            onClick={handleClearAll}
+            disabled={clearingAll || docs.length === 0}
+            className="px-3 py-1.5 rounded-lg border border-rose-800/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 flex items-center gap-2 text-xs font-medium transition disabled:opacity-40"
+            title="Purge all documents and vector embeddings from the knowledge base"
+          >
+            {clearingAll ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span>
+              {clearingAll
+                ? 'Clearing...'
+                : sourceFilter === 'web'
+                ? 'Clear All Web Scraped'
+                : sourceFilter === 'upload'
+                ? 'Clear All Uploaded'
+                : 'Clear All Documents'}
+            </span>
           </button>
         )}
       </div>
@@ -396,6 +477,17 @@ export default function KnowledgeBasePage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="table-header">
+                <th className="py-3 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filteredDocs.length > 0 && selectedIds.size === filteredDocs.length
+                    }
+                    onChange={toggleSelectAll}
+                    className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 cursor-pointer"
+                    title="Select all"
+                  />
+                </th>
                 <th className="py-3 px-4">File</th>
                 <th className="py-3 px-4">Type</th>
                 <th className="py-3 px-4">Size</th>
@@ -409,7 +501,7 @@ export default function KnowledgeBasePage() {
             <tbody className="text-xs text-slate-300">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
                       <span>Loading knowledge base documents...</span>
@@ -418,7 +510,7 @@ export default function KnowledgeBasePage() {
                 </tr>
               ) : filteredDocs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Info className="w-6 h-6 text-slate-500" />
                       <span>No documents found matching the filter.</span>
@@ -428,6 +520,14 @@ export default function KnowledgeBasePage() {
               ) : (
                 filteredDocs.map((doc) => (
                   <tr key={doc.id} className="table-row">
+                    <td className="py-3.5 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(doc.id)}
+                        onChange={() => toggleSelectOne(doc.id)}
+                        className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0 cursor-pointer"
+                      />
+                    </td>
                     <td className="py-3.5 px-4 font-semibold text-white flex items-center gap-2">
                       {isWebDoc(doc) ? (
                         <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -596,6 +696,48 @@ export default function KnowledgeBasePage() {
         loading={deleting}
         onConfirm={confirmDelete}
         onCancel={() => setDocToDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={showBatchDeleteDialog}
+        title={`Delete ${selectedIds.size} selected document${selectedIds.size > 1 ? 's' : ''}?`}
+        description="This will permanently remove the selected documents and their vector embeddings from the knowledge base. This action cannot be undone."
+        subject={`${selectedIds.size} document(s) selected`}
+        confirmLabel={deletingBatch ? 'Deleting...' : 'Delete Selected'}
+        variant="danger"
+        loading={deletingBatch}
+        onConfirm={confirmDeleteSelected}
+        onCancel={() => setShowBatchDeleteDialog(false)}
+      />
+
+      <ConfirmDialog
+        open={showClearAllDialog}
+        title={
+          sourceFilter === 'web'
+            ? 'Clear All Web Scraped Pages?'
+            : sourceFilter === 'upload'
+            ? 'Clear All Uploaded Documents?'
+            : 'Clear All Documents?'
+        }
+        description={
+          sourceFilter === 'web'
+            ? 'This will permanently remove all web-scraped pages and their vector embeddings from the knowledge base. Uploaded files will be preserved. This action cannot be undone.'
+            : sourceFilter === 'upload'
+            ? 'This will permanently remove all uploaded documents and their vector embeddings from the knowledge base. Web-scraped pages will be preserved. This action cannot be undone.'
+            : 'This will permanently remove ALL documents and their vector embeddings from your entire knowledge base. This action cannot be undone.'
+        }
+        subject={
+          sourceFilter === 'web'
+            ? `${docs.filter(isWebDoc).length} web-scraped page(s)`
+            : sourceFilter === 'upload'
+            ? `${docs.filter((d) => !isWebDoc(d)).length} uploaded document(s)`
+            : `${docs.length} total document(s)`
+        }
+        confirmLabel={clearingAll ? 'Clearing...' : 'Clear All'}
+        variant="danger"
+        loading={clearingAll}
+        onConfirm={confirmClearAll}
+        onCancel={() => setShowClearAllDialog(false)}
       />
     </div>
   );
