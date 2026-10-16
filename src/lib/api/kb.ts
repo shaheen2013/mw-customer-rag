@@ -98,4 +98,20 @@ export const kbApi = {
       method: 'DELETE',
     });
   },
+
+  /**
+   * Delete all documents and vector embeddings for the tenant.
+   * Optionally specify scope: 'all', 'scraped', or 'uploaded'.
+   */
+  clearAll: async (
+    scope: 'all' | 'scraped' | 'uploaded' = 'all'
+  ): Promise<{ status: string; message: string; deleted_count: number }> => {
+    return apiClient<{ status: string; message: string; deleted_count: number }>(
+      '/api/v1/kb/documents/clear-all',
+      {
+        method: 'DELETE',
+        params: { scope },
+      }
+    );
+  },
 };
