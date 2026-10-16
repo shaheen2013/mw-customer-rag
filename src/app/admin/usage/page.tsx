@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { tenantsApi, TenantItem } from '@/lib/api/tenants';
 import {
@@ -35,15 +34,13 @@ import {
   Download,
   Settings2,
   Calendar,
-  Building2,
-  Sparkles,
   Bot,
   Globe,
   Loader2,
   Check,
   X,
   AlertCircle,
-  FileSpreadsheet,
+  Sparkles,
 } from 'lucide-react';
 
 const DATE_RANGE_OPTIONS = [
@@ -73,8 +70,6 @@ function formatBytes(bytes: number): string {
 }
 
 export default function AdminUsagePage() {
-  const router = useRouter();
-
   // Filter states
   const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
@@ -143,7 +138,7 @@ export default function AdminUsagePage() {
       setModelRates(res.data.models || []);
       setPricingModalOpen(true);
       setEditingModel(null);
-    } catch (err) {
+    } catch {
       alert('Failed to load pricing rates');
     }
   };
@@ -166,8 +161,9 @@ export default function AdminUsagePage() {
       const res = await usageApi.getPricingRates();
       setModelRates(res.data.models || []);
       fetchData();
-    } catch (err) {
+    } catch {
       alert('Failed to update rate');
+
     } finally {
       setSavingRate(false);
     }

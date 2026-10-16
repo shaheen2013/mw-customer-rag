@@ -74,7 +74,9 @@ export default function ConversationsPage() {
   }, [filter, searchQuery, selectedConv]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   // Debounced search trigger
@@ -83,7 +85,9 @@ export default function ConversationsPage() {
       loadData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);  // intentional: only re-fetch when search changes
+
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
